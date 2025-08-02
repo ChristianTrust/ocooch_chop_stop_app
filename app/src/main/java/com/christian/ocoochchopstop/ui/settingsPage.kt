@@ -27,10 +27,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
-import com.christian.ocoochchopstop.viewmodel.CopStopViewModel
 import com.christian.ocoochchopstop.ui.util.distanceDisplay
 import com.christian.ocoochchopstop.ui.util.dropDownIcons
 import com.christian.ocoochchopstop.ui.util.ocoochCard
+import com.christian.ocoochchopstop.viewmodel.CopStopViewModel
 
 @Composable
 fun settingsPage(chop: CopStopViewModel) {
@@ -55,7 +55,9 @@ fun settingsPage(chop: CopStopViewModel) {
         Pair("Min Delay", chop.minDelay),
         Pair("Steps/Inch", chop.stepsPerInch),
         Pair("Steps/mm", chop.stepsPerMm),
-        Pair("Step Position", chop.stepPosition)
+        Pair("Step Position", chop.stepPosition),
+        Pair("Min Step Position", chop.minStepPosition),
+        Pair("Max Step Position", chop.maxStepPosition)
     )
 //    val commands = listOf("MOVE:", "SPEED:", "ACCEL:", "MAX_DELAY:", "MIN_DELAY:", "HOME", "LOG", "POS")
     val commands = listOf("MOVE:", "HOME", "LOG")
@@ -128,6 +130,7 @@ fun settingsPage(chop: CopStopViewModel) {
                                 ocoochCard(
                                     onClick = {
                                         defaultExpanded = !defaultExpanded
+                                        selectedDefault = ""
                                     },
                                     modifier = Modifier.weight(1f).fillMaxSize(),
                                     colors = listOf(
@@ -173,6 +176,8 @@ fun settingsPage(chop: CopStopViewModel) {
                                                 "Steps/Inch" -> chop.stepsPerInch = orgDefaultVal.toDouble()
                                                 "Steps/mm" -> chop.stepsPerMm = orgDefaultVal.toDouble()
                                                 "Step Position" -> chop.stepPosition = orgDefaultVal.toInt()
+                                                "Min Step Position" -> chop.minStepPosition = orgDefaultVal.toInt()
+                                                "Max Step Position" -> chop.maxStepPosition = orgDefaultVal.toInt()
                                             }
                                             if (selectedDefault != "") {
                                                 selectedDefault = ""
@@ -185,6 +190,7 @@ fun settingsPage(chop: CopStopViewModel) {
                                     ) {
                                         Column(
                                             modifier = Modifier
+                                                .imePadding()
                                                 .verticalScroll(rememberScrollState())
                                                 .width(columnOrRowWidth)
                                                 .clip(RoundedCornerShape(12.dp))
@@ -261,25 +267,55 @@ fun settingsPage(chop: CopStopViewModel) {
                                                         )
 
                                                         if (selectedDefault == key) {
+                                                            val keyboardType = when (key) {
+                                                                "Speed" -> KeyboardType.Number
+                                                                "Accel" -> KeyboardType.Number
+                                                                "Max Delay" -> KeyboardType.Number
+                                                                "Min Delay" -> KeyboardType.Number
+                                                                "Steps/Inch" -> KeyboardType.Decimal
+                                                                "Steps/mm" -> KeyboardType.Decimal
+                                                                "Step Position" -> KeyboardType.Number
+                                                                "Min Step Position" -> KeyboardType.Number
+                                                                "Max Step Position" -> KeyboardType.Number
+                                                                else -> KeyboardType.Number
+                                                            }
+                                                            val doubleRegex = Regex("^\\d*\\.?\\d*$") // Matches numbers like "123", "123.", "123.45"
+                                                            val intRegex = Regex("^\\d*$") // Matches only whole numbers (e.g., 123, 0, etc.)
+
+
                                                             BasicTextField(
                                                                 value = value.toString(),
                                                                 onValueChange = { newValue ->
-                                                                    if (newValue.toDoubleOrNull() != null) {
-                                                                        when (key) {
-                                                                            "Speed" -> chop.speed = newValue.toInt()
-                                                                            "Accel" -> chop.accel = newValue.toInt()
-                                                                            "Max Delay" -> chop.maxDelay = newValue.toInt()
-                                                                            "Min Delay" -> chop.minDelay = newValue.toInt()
-                                                                            "Steps/Inch" -> chop.stepsPerInch = newValue.toDouble()
-                                                                            "Steps/mm" -> chop.stepsPerMm = newValue.toDouble()
-                                                                            "Step Position" -> chop.stepPosition = newValue.toInt()
+                                                                    if (key in listOf("Steps/Inch", "Steps/mm")) {
+                                                                        // Allow decimal input for Double fields
+                                                                        if (newValue.matches(doubleRegex)) {
+                                                                            val doubleValue = newValue.toDoubleOrNull() ?: 0.0
+                                                                            when (key) {
+                                                                                "Steps/Inch" -> chop.stepsPerInch = doubleValue
+                                                                                "Steps/mm" -> chop.stepsPerMm = doubleValue
+                                                                            }
+                                                                        }
+                                                                    } else {
+                                                                        // Allow only integers for Int fields
+                                                                        if (newValue.matches(intRegex)) {
+                                                                            val intValue = newValue.toIntOrNull() ?: 0
+                                                                            when (key) {
+                                                                                "Speed" -> chop.speed = intValue
+                                                                                "Accel" -> chop.accel = intValue
+                                                                                "Max Delay" -> chop.maxDelay = intValue
+                                                                                "Min Delay" -> chop.minDelay = intValue
+                                                                                "Step Position" -> chop.stepPosition = intValue
+                                                                                "Min Step Position" -> chop.minStepPosition = intValue
+                                                                                "Max Step Position" -> chop.maxStepPosition = intValue
+                                                                            }
                                                                         }
                                                                     }
+
                                                                 },
                                                                 enabled = true,
                                                                 singleLine = true,
                                                                 keyboardOptions = KeyboardOptions(
-                                                                    keyboardType = KeyboardType.Decimal,
+                                                                    keyboardType = keyboardType,
                                                                     imeAction = ImeAction.Done
                                                                 ),
                                                                 keyboardActions = KeyboardActions(
@@ -310,7 +346,7 @@ fun settingsPage(chop: CopStopViewModel) {
                             columnOrRow(column = isPortrait, modifier = Modifier.weight(1f), content = {
                                 ocoochCard(
                                     text = "Move +",
-                                    onClick = { chop.sendData("MOVE:1600") },
+                                    onClick = { chop.moveSteps(1600) },
                                     modifier = Modifier.weight(1f).fillMaxSize(),
                                     fontSize = 16
                                 )
@@ -319,7 +355,7 @@ fun settingsPage(chop: CopStopViewModel) {
 
                                 ocoochCard(
                                     text = "Move -",
-                                    onClick = { chop.sendData("MOVE:-1600") },
+                                    onClick = { chop.moveSteps(-1600) },
                                     modifier = Modifier.weight(1f).fillMaxSize(),
                                     fontSize = 16
                                 )
@@ -328,7 +364,7 @@ fun settingsPage(chop: CopStopViewModel) {
                             columnOrRow(column = isPortrait, modifier = Modifier.weight(1f), content = {
                                 ocoochCard(
                                     text = "Jog +",
-                                    onClick = { chop.sendData("MOVE:50") },
+                                    onClick = { chop.moveSteps(50) },
                                     modifier = Modifier.weight(1f).fillMaxSize(),
                                     fontSize = 16
                                 )
@@ -337,7 +373,7 @@ fun settingsPage(chop: CopStopViewModel) {
 
                                 ocoochCard(
                                     text = "Jog -",
-                                    onClick = { chop.sendData("MOVE:-50") },
+                                    onClick = { chop.moveSteps(-50) },
                                     modifier = Modifier.weight(1f).fillMaxSize(),
                                     fontSize = 16
                                 )
@@ -523,7 +559,13 @@ fun settingsPage(chop: CopStopViewModel) {
 
                                 ocoochCard(
                                     text = "Send",
-                                    onClick = { chop.sendData(command) },
+                                    onClick = {
+                                        if (selectedOption == "MOVE:") {
+                                            chop.moveSteps(inputNumber.toInt())
+                                        } else {
+                                            chop.sendData(command)
+                                        }
+                                    },
                                     modifier = Modifier.weight(1f),
                                     fontSize = 24,
                                     enabled = isSingleCommand || (inputNumber.isNotBlank() && inputNumber != "-")
