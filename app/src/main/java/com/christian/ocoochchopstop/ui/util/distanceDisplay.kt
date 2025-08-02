@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import com.christian.ocoochchopstop.CopStopViewModel
+import com.christian.ocoochchopstop.viewmodel.CopStopViewModel
 import kotlinx.coroutines.delay
 
 @Composable

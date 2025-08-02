@@ -20,7 +20,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.christian.ocoochchopstop.CopStopViewModel
+import com.christian.ocoochchopstop.viewmodel.CopStopViewModel
 import com.christian.ocoochchopstop.ui.util.ocoochCard
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch

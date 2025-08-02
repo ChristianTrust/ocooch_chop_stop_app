@@ -4,10 +4,12 @@ import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -25,7 +27,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
-import com.christian.ocoochchopstop.CopStopViewModel
+import com.christian.ocoochchopstop.viewmodel.CopStopViewModel
 import com.christian.ocoochchopstop.ui.util.distanceDisplay
 import com.christian.ocoochchopstop.ui.util.dropDownIcons
 import com.christian.ocoochchopstop.ui.util.ocoochCard
@@ -44,6 +46,7 @@ fun settingsPage(chop: CopStopViewModel) {
     var selectedOption by remember { mutableStateOf("MOVE:") }
     var defaultExpanded by remember { mutableStateOf(false) }
     var selectedDefault by remember { mutableStateOf("") }
+    var orgDefaultVal by remember { mutableStateOf("") }
 
     val defaultValues = listOf(
         Pair("Speed", chop.speed),
@@ -51,16 +54,18 @@ fun settingsPage(chop: CopStopViewModel) {
         Pair("Max Delay", chop.maxDelay),
         Pair("Min Delay", chop.minDelay),
         Pair("Steps/Inch", chop.stepsPerInch),
-        Pair("Steps/mm", chop.stepsPerMm)
+        Pair("Steps/mm", chop.stepsPerMm),
+        Pair("Step Position", chop.stepPosition)
     )
 //    val commands = listOf("MOVE:", "SPEED:", "ACCEL:", "MAX_DELAY:", "MIN_DELAY:", "HOME", "LOG", "POS")
-    val commands = listOf("MOVE:", "HOME", "LOG", "POS")
-    val singleCommands = listOf("HOME", "LOG", "POS")
+    val commands = listOf("MOVE:", "HOME", "LOG")
+    val singleCommands = listOf("HOME", "LOG")
     val isSingleCommand = selectedOption in singleCommands
 
     fun applyAndCloseDefault(key: String) {
         defaultExpanded = false
         chop.setMegaParameters(key)
+        chop.saveSettings(key)
         selectedDefault = ""
     }
 
@@ -160,13 +165,27 @@ fun settingsPage(chop: CopStopViewModel) {
                                 if (defaultExpanded) {
                                     Popup(
                                         onDismissRequest = {
-                                            applyAndCloseDefault(selectedDefault)
+                                            when (selectedDefault) {
+                                                "Speed" -> chop.speed = orgDefaultVal.toInt()
+                                                "Accel" -> chop.accel = orgDefaultVal.toInt()
+                                                "Max Delay" -> chop.maxDelay = orgDefaultVal.toInt()
+                                                "Min Delay" -> chop.minDelay = orgDefaultVal.toInt()
+                                                "Steps/Inch" -> chop.stepsPerInch = orgDefaultVal.toDouble()
+                                                "Steps/mm" -> chop.stepsPerMm = orgDefaultVal.toDouble()
+                                                "Step Position" -> chop.stepPosition = orgDefaultVal.toInt()
+                                            }
+                                            if (selectedDefault != "") {
+                                                selectedDefault = ""
+                                            } else {
+                                                defaultExpanded = false
+                                            }
                                         },
                                         properties = PopupProperties(focusable = true),
                                         alignment = Alignment.TopCenter,
                                     ) {
                                         Column(
                                             modifier = Modifier
+                                                .verticalScroll(rememberScrollState())
                                                 .width(columnOrRowWidth)
                                                 .clip(RoundedCornerShape(12.dp))
                                                 .background(MaterialTheme.colorScheme.primaryContainer),
@@ -214,7 +233,10 @@ fun settingsPage(chop: CopStopViewModel) {
 
                                                 ocoochCard(
                                                     onClick = {
-                                                        selectedDefault = key
+                                                        if (selectedDefault != key) {
+                                                            selectedDefault = key
+                                                            orgDefaultVal = value.toString()
+                                                        } else selectedDefault = ""
                                                     },
                                                     modifier = Modifier
                                                         .width(columnOrRowWidth)
@@ -243,18 +265,14 @@ fun settingsPage(chop: CopStopViewModel) {
                                                                 value = value.toString(),
                                                                 onValueChange = { newValue ->
                                                                     if (newValue.toDoubleOrNull() != null) {
-                                                                        if (key == "Speed") {
-                                                                            chop.speed = newValue.toInt()
-                                                                        } else if (key == "Accel") {
-                                                                            chop.accel = newValue.toInt()
-                                                                        } else if (key == "Max Delay") {
-                                                                            chop.maxDelay = newValue.toInt()
-                                                                        } else if (key == "Min Delay") {
-                                                                            chop.minDelay = newValue.toInt()
-                                                                        } else if (key == "Steps/Inch") {
-                                                                            chop.stepsPerInch = newValue.toDouble()
-                                                                        } else if (key == "Steps/mm") {
-                                                                            chop.stepsPerMm = newValue.toDouble()
+                                                                        when (key) {
+                                                                            "Speed" -> chop.speed = newValue.toInt()
+                                                                            "Accel" -> chop.accel = newValue.toInt()
+                                                                            "Max Delay" -> chop.maxDelay = newValue.toInt()
+                                                                            "Min Delay" -> chop.minDelay = newValue.toInt()
+                                                                            "Steps/Inch" -> chop.stepsPerInch = newValue.toDouble()
+                                                                            "Steps/mm" -> chop.stepsPerMm = newValue.toDouble()
+                                                                            "Step Position" -> chop.stepPosition = newValue.toInt()
                                                                         }
                                                                     }
                                                                 },
@@ -393,16 +411,13 @@ fun settingsPage(chop: CopStopViewModel) {
                                                 onClick = {
                                                     selectedOption = option
                                                     commandExpanded = false
-                                                    if (selectedOption == "MOVE:") {
-                                                        inputNumber = inputMove
-                                                    } else if (selectedOption == "SPEED:") {
-                                                        inputNumber = inputSpeed
-                                                    } else if (selectedOption == "ACCEL:") {
-                                                        inputNumber = inputAccel
-                                                    } else if (selectedOption == "MAX_DELAY:") {
-                                                        inputNumber = inputMaxDelay
-                                                    } else if (selectedOption == "MIN_DELAY:") {
-                                                        inputNumber = inputMinDelay
+                                                    inputNumber = when (selectedOption) {
+                                                        "MOVE:" -> inputMove
+                                                        "SPEED:" -> inputSpeed
+                                                        "ACCEL:" -> inputAccel
+                                                        "MAX_DELAY:" -> inputMaxDelay
+                                                        "MIN_DELAY:" -> inputMinDelay
+                                                        else -> inputNumber
                                                     }
                                                 },
                                                 modifier = Modifier
@@ -467,16 +482,12 @@ fun settingsPage(chop: CopStopViewModel) {
                                         onValueChange = { newValue ->
                                             if (newValue.isEmpty() || newValue.toDoubleOrNull() != null) {
                                                 inputNumber = newValue
-                                                if (selectedOption == "MOVE:") {
-                                                    inputMove = newValue
-                                                } else if (selectedOption == "SPEED:") {
-                                                    inputSpeed = newValue
-                                                } else if (selectedOption == "ACCEL:") {
-                                                    inputAccel = newValue
-                                                } else if (selectedOption == "MAX_DELAY:") {
-                                                    inputMaxDelay = newValue
-                                                } else if (selectedOption == "MIN_DELAY:") {
-                                                    inputMinDelay = newValue
+                                                when (selectedOption) {
+                                                    "MOVE:" -> inputMove = newValue
+                                                    "SPEED:" -> inputSpeed = newValue
+                                                    "ACCEL:" -> inputAccel = newValue
+                                                    "MAX_DELAY:" -> inputMaxDelay = newValue
+                                                    "MIN_DELAY:" -> inputMinDelay = newValue
                                                 }
                                             }
                                         },

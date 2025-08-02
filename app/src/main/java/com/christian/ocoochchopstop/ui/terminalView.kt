@@ -17,7 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.christian.ocoochchopstop.CopStopViewModel
+import com.christian.ocoochchopstop.viewmodel.CopStopViewModel
 import com.christian.ocoochchopstop.ui.theme.ocoochGray10
 import com.christian.ocoochchopstop.ui.theme.ocoochBlue80
 import com.christian.ocoochchopstop.ui.theme.ocoochOrange80

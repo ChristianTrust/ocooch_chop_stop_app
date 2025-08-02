@@ -28,7 +28,7 @@
       </SelectionState>
       <SelectionState runConfigName="Chop_Stop.app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2025-08-02T14:42:56.513494400Z">
+        <DropdownSelection timestamp="2025-08-02T16:29:34.363176300Z">
           <Target type="DEFAULT_BOOT">
             <handle>
               <DeviceId pluginId="PhysicalDevice" identifier="serial=HA1Q13A8" />
