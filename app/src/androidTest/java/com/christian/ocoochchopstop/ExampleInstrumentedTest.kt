@@ -1,4 +1,4 @@
-package com.example.ocoochchopstop
+package com.christian.ocoochchopstop
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4

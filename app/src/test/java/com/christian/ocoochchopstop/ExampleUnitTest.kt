@@ -1,4 +1,4 @@
-package com.example.ocoochchopstop
+package com.christian.ocoochchopstop
 
 import org.junit.Test
 
