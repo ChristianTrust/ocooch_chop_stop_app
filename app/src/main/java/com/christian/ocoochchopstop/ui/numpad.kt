@@ -11,7 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import com.christian.ocoochchopstop.CopStopViewModel
+import com.christian.ocoochchopstop.viewmodel.CopStopViewModel
 import com.christian.ocoochchopstop.ui.util.ocoochCard
 
 @Composable

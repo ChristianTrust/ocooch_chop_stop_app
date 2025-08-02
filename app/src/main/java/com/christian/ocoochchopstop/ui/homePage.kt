@@ -11,7 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import com.christian.ocoochchopstop.CopStopViewModel
+import com.christian.ocoochchopstop.viewmodel.CopStopViewModel
 import com.christian.ocoochchopstop.ui.util.distanceDisplay
 import com.christian.ocoochchopstop.ui.util.ocoochCard
 
