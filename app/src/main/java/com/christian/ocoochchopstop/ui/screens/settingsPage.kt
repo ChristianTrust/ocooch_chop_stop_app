@@ -1,4 +1,4 @@
-package com.christian.ocoochchopstop.ui
+package com.christian.ocoochchopstop.ui.screens
 
 import android.content.res.Configuration
 import androidx.compose.foundation.background
@@ -27,13 +27,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
-import com.christian.ocoochchopstop.ui.util.distanceDisplay
+import com.christian.ocoochchopstop.ui.util.columnOrRow
+import com.christian.ocoochchopstop.ui.elements.distanceDisplay
 import com.christian.ocoochchopstop.ui.util.dropDownIcons
 import com.christian.ocoochchopstop.ui.util.ocoochCard
-import com.christian.ocoochchopstop.viewmodel.CopStopViewModel
+import com.christian.ocoochchopstop.ui.elements.terminalView
+import com.christian.ocoochchopstop.ui.viewmodel.ChopStopViewModel
 
 @Composable
-fun settingsPage(chop: CopStopViewModel) {
+fun settingsPage(chop: ChopStopViewModel) {
     val isPortrait = LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT
     val distanceDisplayWidth = if (isPortrait) 232.dp else 464.dp
 
@@ -53,8 +55,14 @@ fun settingsPage(chop: CopStopViewModel) {
         Pair("Accel", chop.accel),
         Pair("Max Delay", chop.maxDelay),
         Pair("Min Delay", chop.minDelay),
+
+        Pair("8ft Stop Head", chop.eightFtStopHead),
+        Pair("10ft Stop Head", chop.tenFtStopHead),
+        Pair("12ft Stop Head", chop.twelveFtStopHead),
+
         Pair("Steps/Inch", chop.stepsPerInch),
         Pair("Steps/mm", chop.stepsPerMm),
+
         Pair("Step Position", chop.stepPosition),
         Pair("Min Step Position", chop.minStepPosition),
         Pair("Max Step Position", chop.maxStepPosition)
@@ -107,7 +115,7 @@ fun settingsPage(chop: CopStopViewModel) {
 
                 // Input Fields and Buttons
                 columnOrRow(
-                    column = isPortrait,
+                    useColumn = isPortrait,
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight(),
@@ -119,7 +127,7 @@ fun settingsPage(chop: CopStopViewModel) {
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
 
-                            columnOrRow(column = isPortrait, modifier = Modifier.weight(1f), content = {
+                            columnOrRow(useColumn = isPortrait, modifier = Modifier.weight(1f), content = {
 
                                 if (!isPortrait) {
                                     Spacer(modifier = Modifier.weight(0.55f))
@@ -173,8 +181,14 @@ fun settingsPage(chop: CopStopViewModel) {
                                                 "Accel" -> chop.accel = orgDefaultVal.toInt()
                                                 "Max Delay" -> chop.maxDelay = orgDefaultVal.toInt()
                                                 "Min Delay" -> chop.minDelay = orgDefaultVal.toInt()
+
+                                                "8ft Stop Head" -> chop.eightFtStopHead = orgDefaultVal.toDouble()
+                                                "10ft Stop Head" -> chop.tenFtStopHead = orgDefaultVal.toDouble()
+                                                "12ft Stop Head" -> chop.twelveFtStopHead = orgDefaultVal.toDouble()
+
                                                 "Steps/Inch" -> chop.stepsPerInch = orgDefaultVal.toDouble()
                                                 "Steps/mm" -> chop.stepsPerMm = orgDefaultVal.toDouble()
+
                                                 "Step Position" -> chop.stepPosition = orgDefaultVal.toInt()
                                                 "Min Step Position" -> chop.minStepPosition = orgDefaultVal.toInt()
                                                 "Max Step Position" -> chop.maxStepPosition = orgDefaultVal.toInt()
@@ -272,8 +286,14 @@ fun settingsPage(chop: CopStopViewModel) {
                                                                 "Accel" -> KeyboardType.Number
                                                                 "Max Delay" -> KeyboardType.Number
                                                                 "Min Delay" -> KeyboardType.Number
+
+                                                                "8ft Stop Head" -> KeyboardType.Decimal
+                                                                "10ft Stop Head" -> KeyboardType.Decimal
+                                                                "12ft Stop Head" -> KeyboardType.Decimal
+
                                                                 "Steps/Inch" -> KeyboardType.Decimal
                                                                 "Steps/mm" -> KeyboardType.Decimal
+
                                                                 "Step Position" -> KeyboardType.Number
                                                                 "Min Step Position" -> KeyboardType.Number
                                                                 "Max Step Position" -> KeyboardType.Number
@@ -293,6 +313,10 @@ fun settingsPage(chop: CopStopViewModel) {
                                                                             when (key) {
                                                                                 "Steps/Inch" -> chop.stepsPerInch = doubleValue
                                                                                 "Steps/mm" -> chop.stepsPerMm = doubleValue
+
+                                                                                "8ft Stop Head" -> chop.eightFtStopHead = doubleValue
+                                                                                "10ft Stop Head" -> chop.tenFtStopHead = doubleValue
+                                                                                "12ft Stop Head" -> chop.twelveFtStopHead = doubleValue
                                                                             }
                                                                         }
                                                                     } else {
@@ -304,6 +328,7 @@ fun settingsPage(chop: CopStopViewModel) {
                                                                                 "Accel" -> chop.accel = intValue
                                                                                 "Max Delay" -> chop.maxDelay = intValue
                                                                                 "Min Delay" -> chop.minDelay = intValue
+
                                                                                 "Step Position" -> chop.stepPosition = intValue
                                                                                 "Min Step Position" -> chop.minStepPosition = intValue
                                                                                 "Max Step Position" -> chop.maxStepPosition = intValue
@@ -343,7 +368,7 @@ fun settingsPage(chop: CopStopViewModel) {
                                 }
                             })
 
-                            columnOrRow(column = isPortrait, modifier = Modifier.weight(1f), content = {
+                            columnOrRow(useColumn = isPortrait, modifier = Modifier.weight(1f), content = {
                                 ocoochCard(
                                     text = "Move +",
                                     onClick = { chop.moveSteps(1600) },
@@ -361,7 +386,7 @@ fun settingsPage(chop: CopStopViewModel) {
                                 )
                             })
 
-                            columnOrRow(column = isPortrait, modifier = Modifier.weight(1f), content = {
+                            columnOrRow(useColumn = isPortrait, modifier = Modifier.weight(1f), content = {
                                 ocoochCard(
                                     text = "Jog +",
                                     onClick = { chop.moveSteps(50) },
@@ -380,7 +405,7 @@ fun settingsPage(chop: CopStopViewModel) {
                             })
 
                             // Input Field and Send Button
-                            columnOrRow(column = isPortrait, modifier = Modifier.weight(1f), content = {
+                            columnOrRow(useColumn = isPortrait, modifier = Modifier.weight(1f), content = {
                                 // Dropdown Menu for Send Command
                                 var commandExpanded by remember { mutableStateOf(false) }
                                 ocoochCard(
@@ -554,7 +579,7 @@ fun settingsPage(chop: CopStopViewModel) {
                                 }
                             })
 
-                            columnOrRow(column = isPortrait, modifier = Modifier.weight(1f), content = {
+                            columnOrRow(useColumn = isPortrait, modifier = Modifier.weight(1f), content = {
                                 val command = if (isSingleCommand) selectedOption else selectedOption + inputNumber
 
                                 ocoochCard(

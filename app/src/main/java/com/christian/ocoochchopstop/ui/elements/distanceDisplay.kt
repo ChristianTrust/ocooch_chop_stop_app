@@ -1,4 +1,4 @@
-package com.christian.ocoochchopstop.ui.util
+package com.christian.ocoochchopstop.ui.elements
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -19,12 +19,12 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import com.christian.ocoochchopstop.viewmodel.CopStopViewModel
+import com.christian.ocoochchopstop.ui.viewmodel.ChopStopViewModel
 import kotlinx.coroutines.delay
 
 @Composable
 fun distanceDisplay(
-    chop: CopStopViewModel,
+    chop: ChopStopViewModel,
     width: Dp,
     distance: String = chop.getDisplayPosition(),
     modifier: Modifier = Modifier
