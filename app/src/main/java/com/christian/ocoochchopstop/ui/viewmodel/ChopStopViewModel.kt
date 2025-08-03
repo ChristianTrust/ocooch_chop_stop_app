@@ -1,4 +1,4 @@
-package com.christian.ocoochchopstop.viewmodel
+package com.christian.ocoochchopstop.ui.viewmodel
 
 import android.app.Application
 import android.content.BroadcastReceiver
@@ -9,63 +9,38 @@ import android.hardware.usb.UsbManager
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.datastore.preferences.core.doublePreferencesKey
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.application
 import androidx.lifecycle.viewModelScope
-import com.christian.ocoochchopstop.datastore.dataStore
+import com.christian.ocoochchopstop.data.ChopStopRepository
 import com.hoho.android.usbserial.driver.UsbSerialDriver
 import com.hoho.android.usbserial.driver.UsbSerialPort
 import com.hoho.android.usbserial.driver.UsbSerialProber
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.map
 import kotlin.math.round
 
-class CopStopViewModel(application: Application) : AndroidViewModel(application) {
-
-    companion object {
-        private val SPEED_KEY = intPreferencesKey("speed")
-        private val ACCEL_KEY = intPreferencesKey("accel")
-        private val MAX_DELAY_KEY = intPreferencesKey("max_delay")
-        private val MIN_DELAY_KEY = intPreferencesKey("min_delay")
-        private val STEPS_PER_INCH_KEY = doublePreferencesKey("steps_per_inch")
-        private val STEPS_PER_MM_KEY = doublePreferencesKey("steps_per_mm")
-
-        private val STEP_POSITION_KEY = intPreferencesKey("step_position")
-    }
-
-    val speedFlow = application.applicationContext.dataStore.data.map { preferences ->
-        preferences[SPEED_KEY] ?: 20000
-    }
-    val accelFlow = application.applicationContext.dataStore.data.map { preferences ->
-        preferences[ACCEL_KEY] ?: 8000
-    }
-    val maxDelayFlow = application.applicationContext.dataStore.data.map { preferences ->
-        preferences[MAX_DELAY_KEY] ?: 320
-    }
-    val minDelayFlow = application.applicationContext.dataStore.data.map { preferences ->
-        preferences[MIN_DELAY_KEY] ?: 6
-    }
-    val stepsPerInchFlow = application.applicationContext.dataStore.data.map { preferences ->
-        preferences[STEPS_PER_INCH_KEY] ?: 1777.77777778
-    }
-    val stepsPerMmFlow = application.applicationContext.dataStore.data.map { preferences ->
-        preferences[STEPS_PER_MM_KEY] ?: 69.9912510935
-    }
-    val stepPositionFlow = application.applicationContext.dataStore.data.map { preferences ->
-        preferences[STEP_POSITION_KEY] ?: 0
-    }
+class ChopStopViewModel(
+    application: Application,
+    private val repository: ChopStopRepository
+) : AndroidViewModel(application) {
 
     var speed by mutableStateOf(0)
     var accel by mutableStateOf(0)
     var maxDelay by mutableStateOf(0)
     var minDelay by mutableStateOf(0)
+
+    var eightFtStopHead by mutableStateOf(0.0)
+    var tenFtStopHead by mutableStateOf(0.0)
+    var twelveFtStopHead by mutableStateOf(0.0)
+
     var stepsPerInch by mutableStateOf(0.0)
     var stepsPerMm by mutableStateOf(0.0)
 
     var stepPosition by mutableStateOf(0)
+    var minStepPosition by mutableStateOf(0)
+    var maxStepPosition by mutableStateOf(170666)
+
+    var stopHead by mutableStateOf("8ft")
+
     var unitPosition by mutableStateOf("")
     var parametersSet by mutableStateOf(false)
 
@@ -106,38 +81,72 @@ class CopStopViewModel(application: Application) : AndroidViewModel(application)
     init {
         // Observing dataStore values
         viewModelScope.launch {
-            speedFlow.collect { speedValue ->
+            repository.speedFlow.collect { speedValue ->
                 speed = speedValue // Update speed
             }
         }
         viewModelScope.launch {
-            accelFlow.collect { accelValue ->
+            repository.accelFlow.collect { accelValue ->
                 accel = accelValue // Update accel
             }
         }
         viewModelScope.launch {
-            maxDelayFlow.collect { maxDelayValue ->
+            repository.maxDelayFlow.collect { maxDelayValue ->
                 maxDelay = maxDelayValue // Update maxDelay
             }
         }
         viewModelScope.launch {
-            minDelayFlow.collect { minDelayValue ->
+            repository.minDelayFlow.collect { minDelayValue ->
                 minDelay = minDelayValue // Update minDelay
             }
         }
+
         viewModelScope.launch {
-            stepsPerInchFlow.collect { stepsPerInchValue ->
+            repository.eightFtStopHeadFlow.collect { eightFtStopHeadValue ->
+                eightFtStopHead = eightFtStopHeadValue // Update eightFtStopHead
+            }
+        }
+        viewModelScope.launch {
+            repository.tenFtStopHeadFlow.collect { tenFtStopHeadValue ->
+                tenFtStopHead = tenFtStopHeadValue // Update tenFtStopHead
+            }
+        }
+        viewModelScope.launch {
+            repository.twelveFtStopHeadFlow.collect { twelveFtStopHeadValue ->
+                twelveFtStopHead = twelveFtStopHeadValue // Update twelveFtStopHead
+            }
+        }
+
+        viewModelScope.launch {
+            repository.stepsPerInchFlow.collect { stepsPerInchValue ->
                 stepsPerInch = stepsPerInchValue // Update stepsPerInch
             }
         }
         viewModelScope.launch {
-            stepsPerMmFlow.collect { stepsPerMmValue ->
+            repository.stepsPerMmFlow.collect { stepsPerMmValue ->
                 stepsPerMm = stepsPerMmValue // Update stepsPerMm
             }
         }
+
         viewModelScope.launch {
-            stepPositionFlow.collect { stepPositionValue ->
+            repository.stepPositionFlow.collect { stepPositionValue ->
                 stepPosition = stepPositionValue // Update stepPosition
+            }
+        }
+        viewModelScope.launch {
+            repository.minStepPositionFlow.collect { minStepPositionValue ->
+                minStepPosition = minStepPositionValue // Update minStepPosition
+            }
+        }
+        viewModelScope.launch {
+            repository.maxStepPositionFlow.collect { maxStepPositionValue ->
+                maxStepPosition = maxStepPositionValue // Update maxStepPosition
+            }
+        }
+
+        viewModelScope.launch {
+            repository.stopHeadFlow.collect { stopHeadValue ->
+                stopHead = stopHeadValue // Update stopHead
             }
         }
 
@@ -152,58 +161,54 @@ class CopStopViewModel(application: Application) : AndroidViewModel(application)
 
         unit = if (isInch) "INCH:" else "MM:"
         unitMarker = if (isInch) "\"" else "mm"
-    }
 
-    suspend fun setSpeed(speed: Int) {
-        application.applicationContext.dataStore.edit { preferences ->
-            preferences[SPEED_KEY] = speed
-        }
-    }
-    suspend fun setAccel(accel: Int) {
-        application.applicationContext.dataStore.edit { preferences ->
-            preferences[ACCEL_KEY] = accel
-        }
-    }
-    suspend fun setMaxDelay(maxDelay: Int) {
-        application.applicationContext.dataStore.edit { preferences ->
-            preferences[MAX_DELAY_KEY] = maxDelay
-        }
-    }
-    suspend fun setMinDelay(minDelay: Int) {
-        application.applicationContext.dataStore.edit { preferences ->
-            preferences[MIN_DELAY_KEY] = minDelay
-        }
-    }
-    suspend fun setStepsPerInch(stepsPerInch: Double) {
-        application.applicationContext.dataStore.edit { preferences ->
-            preferences[STEPS_PER_INCH_KEY] = stepsPerInch
-        }
-    }
-    suspend fun setStepsPerMm(stepsPerMm: Double) {
-        application.applicationContext.dataStore.edit { preferences ->
-            preferences[STEPS_PER_MM_KEY] = stepsPerMm
+        viewModelScope.launch {
+            var tries = 0
+            while (!parametersSet && tries < 10) {
+                sendData("CONFIRM")
+                tries++
+                delay(5000)
+            }
         }
     }
 
     fun saveSettings(key: String) {
         viewModelScope.launch {
             when (key) {
-                "Speed" -> setSpeed(speed)
-                "Accel" -> setAccel(accel)
-                "Max Delay" -> setMaxDelay(maxDelay)
-                "Min Delay" -> setMinDelay(minDelay)
-                "Steps/Inch" -> setStepsPerInch(stepsPerInch)
-                "Steps/mm" -> setStepsPerMm(stepsPerMm)
+                "Speed" -> repository.setSpeed(speed)
+                "Accel" -> repository.setAccel(accel)
+                "Max Delay" -> repository.setMaxDelay(maxDelay)
+                "Min Delay" -> repository.setMinDelay(minDelay)
+
+                "8ft Stop Head" -> repository.setEightFtStopHead(eightFtStopHead)
+                "10ft Stop Head" -> repository.setTenFtStopHead(tenFtStopHead)
+                "12ft Stop Head" -> repository.setTwelveFtStopHead(twelveFtStopHead)
+
+                "Steps/Inch" -> repository.setStepsPerInch(stepsPerInch)
+                "Steps/mm" -> repository.setStepsPerMm(stepsPerMm)
+
+                "Step Position" -> repository.setStepPosition(stepPosition)
+                "Min Step Position" -> repository.setMinStepPosition(minStepPosition)
+                "Max Step Position" -> repository.setMaxStepPosition(maxStepPosition)
+
+                "Stop Head" -> repository.setStopHead(stopHead)
             }
         }
     }
 
-    fun saveStepPosition(newStepPosition: Int) {
-        viewModelScope.launch {
-            application.applicationContext.dataStore.edit { preferences ->
-                preferences[STEP_POSITION_KEY] = newStepPosition
+    fun moveSteps(steps: Int) {
+        if (steps < 0) {
+            if (stepPosition + steps < minStepPosition) {
+                log("Can't move $steps steps below min step position", "[ERR]")
+                return
+            }
+        } else {
+            if (stepPosition + steps > maxStepPosition) {
+                log("Can't move $steps steps above max step position", "[ERR]")
+                return
             }
         }
+        sendData("MOVE:$steps")
     }
 
     fun goToPosition(unitType: String = this.unit, distance: Float = this.inputNumber.toFloat()) {
@@ -228,7 +233,7 @@ class CopStopViewModel(application: Application) : AndroidViewModel(application)
             }
         }
 
-        sendData("MOVE:$stepsToGo")
+        moveSteps(stepsToGo)
         clearInput()
     }
 
@@ -277,6 +282,11 @@ class CopStopViewModel(application: Application) : AndroidViewModel(application)
                 isInvalidInput = true
             }
         }
+    }
+
+    fun changeStopHead(head: String = "8ft") {
+        stopHead = head
+        saveSettings("Stop Head")
     }
 
     fun toggleInch() {
@@ -336,11 +346,6 @@ class CopStopViewModel(application: Application) : AndroidViewModel(application)
                 lastReadLine.value = "Loading"
             }
 
-            // Wait for the port to be ready
-            delay(1000)
-            sendData("CONFIRM")
-            delay(2000)
-            sendData("CONFIRM")
             readData()
         }
     }
@@ -408,7 +413,7 @@ class CopStopViewModel(application: Application) : AndroidViewModel(application)
             val parts = line.split(":")
             if (parts.size == 2) {
                 stepPosition = parts[1].toInt()
-                saveStepPosition(stepPosition)
+                saveSettings("Step Position")
             }
         }
         else if (line == "STARTED") {
@@ -428,20 +433,20 @@ class CopStopViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun setMegaParameters(param: String) {
-        if (param == "Speed" || param == "all") {
+        if (param == "all") {
             sendData("SPEED:$speed")
-        }
-        if (param == "Accel" || param == "all") {
             sendData("ACCEL:$accel")
-        }
-        if (param == "Max Delay" || param == "all") {
             sendData("MAX_DELAY:$maxDelay")
-        }
-        if (param == "Min Delay" || param == "all") {
             sendData("MIN_DELAY:$minDelay")
-        }
-        if (param == "Step Position" || param == "all") {
             sendData("POS:$stepPosition")
+        } else {
+            when (param) {
+                "Speed" -> sendData("SPEED:$speed")
+                "Accel" -> sendData("ACCEL:$accel")
+                "Max Delay" -> sendData("MAX_DELAY:$maxDelay")
+                "Min Delay" -> sendData("MIN_DELAY:$minDelay")
+                "Step Position" -> sendData("POS:$stepPosition")
+            }
         }
     }
 

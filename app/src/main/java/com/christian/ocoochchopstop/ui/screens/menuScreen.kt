@@ -1,5 +1,6 @@
-package com.christian.ocoochchopstop.ui
+package com.christian.ocoochchopstop.ui.screens
 
+import android.content.res.Configuration
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
@@ -14,19 +15,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.christian.ocoochchopstop.viewmodel.CopStopViewModel
+import com.christian.ocoochchopstop.ui.util.columnOrRow
+import com.christian.ocoochchopstop.ui.viewmodel.ChopStopViewModel
 import com.christian.ocoochchopstop.ui.util.ocoochCard
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @Composable
-fun menuScreen(chop: CopStopViewModel) {
+fun menuScreen(chop: ChopStopViewModel) {
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -68,9 +73,11 @@ fun drawerContent(
     navController: NavHostController,
     drawerState: DrawerState,
     scope: CoroutineScope,
-    chop: CopStopViewModel
+    chop: ChopStopViewModel
 ) {
-    val width = 128.dp
+    val isPortrait = LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT
+    val width = if (isPortrait) 128.dp else 192.dp
+    val widthOffset = if (isPortrait) 32.dp else 16.dp
     Column(
         modifier = Modifier
             .fillMaxHeight()
@@ -81,6 +88,7 @@ fun drawerContent(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(modifier = Modifier.height(24.dp).width(1.dp))
+
         NavigationDrawerItem(
             modifier = Modifier.width(width),
             label = { Text("Home") },
@@ -150,15 +158,19 @@ fun drawerContent(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
+            // Connection confirmation
             if (!chop.parametersSet) {
+                val connectionHeight = if (isPortrait) 48.dp else 32.dp
+
                 ocoochCard(
                     text = "Confirm Connection",
                     onClick = {
+                        chop.connectToDevice()
                         chop.sendData("CONFIRM")
                     },
                     modifier = Modifier
-                        .width(width - 16.dp)
-                        .height(48.dp),
+                        .width(width - widthOffset)
+                        .height(connectionHeight),
                     fontSize = 12,
                     colors = listOf(
                         MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.75f),
@@ -169,9 +181,74 @@ fun drawerContent(
 
             Spacer(modifier = Modifier.padding(8.dp))
 
+            // Stopper head selector
+            var stopHeadBoxHeight = if (isPortrait) 164.dp else 80.dp
+
             Box(
                 modifier = Modifier
-                    .padding(16.dp)
+                    .width(width - widthOffset)
+                    .height(stopHeadBoxHeight)
+                    .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(16.dp))
+            ) {
+                Box(
+                    modifier = Modifier
+                        .clickable {
+                            chop.changeStopHead() // Update external state
+                        }
+                ) {
+                    Text(
+                        text = "Stopper Head",
+                        modifier = Modifier
+                            .width(width - 16.dp)
+                            .align(Alignment.TopCenter)
+                            .padding(8.dp),
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp
+                    )
+
+                    columnOrRow(
+                        useColumn = isPortrait,
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        content = {
+                            ocoochCard(
+                                text = "8ft",
+                                onClick = { chop.changeStopHead("8ft") },
+                                modifier = Modifier
+                                    .width(48.dp)
+                                    .height(48.dp),
+                                fontSize = 16
+                            )
+                            ocoochCard(
+                                text = "10ft",
+                                onClick = { chop.changeStopHead("10ft") },
+                                modifier = Modifier
+                                    .width(48.dp)
+                                    .height(48.dp),
+                                fontSize = 16
+                            )
+                            ocoochCard(
+                                text = "12ft",
+                                onClick = { chop.changeStopHead("12ft") },
+                                modifier = Modifier
+                                    .width(48.dp)
+                                    .height(48.dp),
+                                fontSize = 16
+                            )
+                        }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.padding(4.dp))
+
+            // Unit selector
+            Box(
+                modifier = Modifier
+                    .padding(8.dp)
                     .width(72.dp)
                     .height(32.dp)
                     .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(16.dp))

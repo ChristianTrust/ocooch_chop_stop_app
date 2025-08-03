@@ -1,4 +1,4 @@
-package com.christian.ocoochchopstop.ui
+package com.christian.ocoochchopstop.ui.elements
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -10,22 +10,26 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.christian.ocoochchopstop.viewmodel.CopStopViewModel
 import com.christian.ocoochchopstop.ui.util.ocoochCard
 
 @Composable
-fun numpad(mainModifier: Modifier = Modifier, chop: CopStopViewModel) {
-    val cornerRadius = 12.dp
-    val fontSize = 24
-
-    val buttonColors = listOf(
+fun numpad(
+    onNumberClick: (String) -> Unit,
+    onClearClick: () -> Unit,
+    onBackspaceClick: () -> Unit,
+    isDecimalEnabled: Boolean,
+    modifier: Modifier = Modifier,
+    cornerRadius: Dp = 12.dp,
+    fontSize: Int = 24,
+    buttonColors: List<androidx.compose.ui.graphics.Color> = listOf(
         MaterialTheme.colorScheme.secondary,
         MaterialTheme.colorScheme.onSecondary
     )
-
+) {
     Row(
-        modifier = mainModifier
+        modifier = modifier
             .clip(RoundedCornerShape(cornerRadius))
             .background(MaterialTheme.colorScheme.secondaryContainer)
             .fillMaxWidth()
@@ -34,14 +38,13 @@ fun numpad(mainModifier: Modifier = Modifier, chop: CopStopViewModel) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(
-            modifier = Modifier
-                .weight(1f),
+            modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             ocoochCard(
                 text = "7",
-                onClick = { chop.addToNumber("7") },
+                onClick = { onNumberClick("7") },
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(cornerRadius)),
@@ -50,7 +53,7 @@ fun numpad(mainModifier: Modifier = Modifier, chop: CopStopViewModel) {
             )
             ocoochCard(
                 text = "4",
-                onClick = { chop.addToNumber("4") },
+                onClick = { onNumberClick("4") },
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(cornerRadius)),
@@ -59,7 +62,7 @@ fun numpad(mainModifier: Modifier = Modifier, chop: CopStopViewModel) {
             )
             ocoochCard(
                 text = "1",
-                onClick = { chop.addToNumber("1") },
+                onClick = { onNumberClick("1") },
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(cornerRadius)),
@@ -69,14 +72,13 @@ fun numpad(mainModifier: Modifier = Modifier, chop: CopStopViewModel) {
         }
         Spacer(modifier = Modifier.width(8.dp))
         Column(
-            modifier = Modifier
-                .weight(1f),
+            modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             ocoochCard(
                 text = "8",
-                onClick = { chop.addToNumber("8") },
+                onClick = { onNumberClick("8") },
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(cornerRadius)),
@@ -85,7 +87,7 @@ fun numpad(mainModifier: Modifier = Modifier, chop: CopStopViewModel) {
             )
             ocoochCard(
                 text = "5",
-                onClick = { chop.addToNumber("5") },
+                onClick = { onNumberClick("5") },
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(cornerRadius)),
@@ -94,7 +96,7 @@ fun numpad(mainModifier: Modifier = Modifier, chop: CopStopViewModel) {
             )
             ocoochCard(
                 text = "2",
-                onClick = { chop.addToNumber("2") },
+                onClick = { onNumberClick("2") },
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(cornerRadius)),
@@ -104,14 +106,13 @@ fun numpad(mainModifier: Modifier = Modifier, chop: CopStopViewModel) {
         }
         Spacer(modifier = Modifier.width(8.dp))
         Column(
-            modifier = Modifier
-                .weight(1f),
+            modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             ocoochCard(
                 text = "9",
-                onClick = { chop.addToNumber("9") },
+                onClick = { onNumberClick("9") },
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(cornerRadius)),
@@ -120,7 +121,7 @@ fun numpad(mainModifier: Modifier = Modifier, chop: CopStopViewModel) {
             )
             ocoochCard(
                 text = "6",
-                onClick = { chop.addToNumber("6") },
+                onClick = { onNumberClick("6") },
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(cornerRadius)),
@@ -129,7 +130,7 @@ fun numpad(mainModifier: Modifier = Modifier, chop: CopStopViewModel) {
             )
             ocoochCard(
                 text = "3",
-                onClick = { chop.addToNumber("3") },
+                onClick = { onNumberClick("3") },
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(cornerRadius)),
@@ -139,14 +140,13 @@ fun numpad(mainModifier: Modifier = Modifier, chop: CopStopViewModel) {
         }
         Spacer(modifier = Modifier.width(8.dp))
         Column(
-            modifier = Modifier
-                .weight(1f),
+            modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             ocoochCard(
                 text = "C",
-                onClick = { chop.clearInput() },
+                onClick = onClearClick,
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(cornerRadius)),
@@ -155,18 +155,16 @@ fun numpad(mainModifier: Modifier = Modifier, chop: CopStopViewModel) {
             )
             ocoochCard(
                 icon = Icons.AutoMirrored.Rounded.ArrowBack,
-                onClick = { chop.back() },
+                onClick = onBackspaceClick,
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(cornerRadius)),
                 fontSize = 32,
                 colors = buttonColors
             )
-
-            val periodCommand = if (chop.isDecimal) "" else "."
             ocoochCard(
                 text = ".",
-                onClick = { chop.addToNumber(periodCommand) },
+                onClick = { onNumberClick(if (isDecimalEnabled) "" else ".") },
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(cornerRadius)),
@@ -175,7 +173,7 @@ fun numpad(mainModifier: Modifier = Modifier, chop: CopStopViewModel) {
             )
             ocoochCard(
                 text = "0",
-                onClick = { chop.addToNumber("0") },
+                onClick = { onNumberClick("0") },
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(cornerRadius)),

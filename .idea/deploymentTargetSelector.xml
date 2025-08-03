@@ -27,7 +27,7 @@
         </DialogSelection>
       </SelectionState>
       <SelectionState runConfigName="Chop_Stop.app">
-        <option name="selectionMode" value="DROPDOWN" />
+        <option name="selectionMode" value="DIALOG" />
         <DropdownSelection timestamp="2025-08-02T16:29:34.363176300Z">
           <Target type="DEFAULT_BOOT">
             <handle>
@@ -37,6 +37,11 @@
         </DropdownSelection>
         <DialogSelection>
           <targets>
+            <Target type="DEFAULT_BOOT">
+              <handle>
+                <DeviceId pluginId="PhysicalDevice" identifier="serial=R5CWC2YVDBZ" />
+              </handle>
+            </Target>
             <Target type="DEFAULT_BOOT">
               <handle>
                 <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\chris\.android\avd\Medium_Phone_API_35.avd" />

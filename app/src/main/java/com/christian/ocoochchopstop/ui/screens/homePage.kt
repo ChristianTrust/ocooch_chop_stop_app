@@ -1,4 +1,4 @@
-package com.christian.ocoochchopstop.ui
+package com.christian.ocoochchopstop.ui.screens
 
 import android.content.res.Configuration
 import androidx.compose.animation.*
@@ -11,12 +11,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import com.christian.ocoochchopstop.viewmodel.CopStopViewModel
-import com.christian.ocoochchopstop.ui.util.distanceDisplay
+import com.christian.ocoochchopstop.ui.util.columnOrRow
+import com.christian.ocoochchopstop.ui.viewmodel.ChopStopViewModel
+import com.christian.ocoochchopstop.ui.elements.distanceDisplay
+import com.christian.ocoochchopstop.ui.elements.numpad
 import com.christian.ocoochchopstop.ui.util.ocoochCard
 
 @Composable
-fun homePage(chop: CopStopViewModel) {
+fun homePage(chop: ChopStopViewModel) {
     val isPortrait = LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT
     val padding = 8.dp
 
@@ -32,7 +34,7 @@ fun homePage(chop: CopStopViewModel) {
         val buttonBoxHeight = if (isPortrait) maxHeight / 2 else maxHeight
         val goButtonWidth = if (isPortrait) maxWidth / 4 else buttonBoxWidth / 4 - 4.dp
 
-        columnOrRow(column = isPortrait, modifier = Modifier.fillMaxSize(), content = {
+        columnOrRow(useColumn = isPortrait, modifier = Modifier.fillMaxSize(), content = {
 
             Column(
                 modifier = Modifier
@@ -91,7 +93,13 @@ fun homePage(chop: CopStopViewModel) {
                         .padding(16.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    numpad(mainModifier = Modifier, chop = chop)
+                    numpad(
+                        onNumberClick = { chop.addToNumber(it) },
+                        onClearClick = { chop.clearInput() },
+                        onBackspaceClick = { chop.back() },
+                        isDecimalEnabled = chop.isDecimal,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
                 }
             }
 
@@ -131,18 +139,5 @@ fun homePage(chop: CopStopViewModel) {
                 }
             }
         })
-    }
-}
-
-@Composable
-fun columnOrRow(column: Boolean, modifier: Modifier, content: @Composable () -> Unit) {
-    if (column) {
-        Column(modifier = modifier) {
-            content()
-        }
-    } else {
-        Row(modifier = modifier) {
-            content()
-        }
     }
 }
