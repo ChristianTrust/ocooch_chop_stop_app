@@ -23,19 +23,23 @@ import com.christian.ocoochchopstop.ui.theme.ocoochBlue80
 import com.christian.ocoochchopstop.ui.theme.ocoochOrange80
 
 @Composable
-fun terminalView(chop: ChopStopViewModel) {
+fun terminalView(
+    chop: ChopStopViewModel,
+    modifier: Modifier = Modifier,
+    scrollToEnd: Int = 0
+) {
     val lazyListState = rememberLazyListState()
     var terminalTextColor = ocoochOrange80
     var terminalTextWeight = MaterialTheme.typography.bodySmall.fontWeight
 
-    LaunchedEffect(chop.terminalText.value) {
+    LaunchedEffect(chop.terminalText.value, scrollToEnd) {
         if (chop.terminalText.value.isNotEmpty()) {
             lazyListState.animateScrollToItem(chop.terminalText.value.size - 1)
         }
     }
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .padding(2.dp)
@@ -46,7 +50,7 @@ fun terminalView(chop: ChopStopViewModel) {
                 modifier = Modifier.fillMaxSize()
             ) {
                 items(chop.terminalText.value) { line ->
-                    if (line.startsWith(" ERR")) {
+                    if (line.startsWith("[ERR]") || line.startsWith(" ERR")) {
                         terminalTextColor = Color.Red
                         terminalTextWeight = MaterialTheme.typography.bodyLarge.fontWeight
                     } else if (line.startsWith("[Sent]")) {

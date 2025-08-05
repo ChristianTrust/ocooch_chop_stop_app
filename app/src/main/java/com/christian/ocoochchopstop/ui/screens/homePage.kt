@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -15,12 +16,18 @@ import com.christian.ocoochchopstop.ui.util.columnOrRow
 import com.christian.ocoochchopstop.ui.viewmodel.ChopStopViewModel
 import com.christian.ocoochchopstop.ui.elements.distanceDisplay
 import com.christian.ocoochchopstop.ui.elements.numpad
+import com.christian.ocoochchopstop.ui.elements.ocoochPopupAlert
+import com.christian.ocoochchopstop.ui.input.addToMain
 import com.christian.ocoochchopstop.ui.util.ocoochCard
 
 @Composable
 fun homePage(chop: ChopStopViewModel) {
     val isPortrait = LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT
     val padding = 8.dp
+
+    LaunchedEffect(Unit) {
+        chop.closeLengthError()
+    }
 
     BoxWithConstraints(
         modifier = Modifier
@@ -35,6 +42,13 @@ fun homePage(chop: ChopStopViewModel) {
         val goButtonWidth = if (isPortrait) maxWidth / 4 else buttonBoxWidth / 4 - 4.dp
 
         columnOrRow(useColumn = isPortrait, modifier = Modifier.fillMaxSize(), content = {
+
+            ocoochPopupAlert(
+                show = chop.showLengthError,
+                title = chop.lengthErrorTitle,
+                message = chop.lengthErrorMessage,
+                onCancel = { chop.closeLengthError() }
+            )
 
             Column(
                 modifier = Modifier
@@ -94,11 +108,12 @@ fun homePage(chop: ChopStopViewModel) {
                     contentAlignment = Alignment.Center
                 ) {
                     numpad(
-                        onNumberClick = { chop.addToNumber(it) },
-                        onClearClick = { chop.clearInput() },
-                        onBackspaceClick = { chop.back() },
-                        isDecimalEnabled = chop.isDecimal,
-                        modifier = Modifier.padding(top = 8.dp)
+                        onClick = {
+                            chop.inputNumber = addToMain(it, chop.inputNumber, chop)
+                        },
+                        modifier = Modifier.padding(top = 8.dp),
+                        isDecimalEnabled = true,
+                        useConfirmButton = false
                     )
                 }
             }

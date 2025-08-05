@@ -77,7 +77,9 @@ fun drawerContent(
 ) {
     val isPortrait = LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT
     val width = if (isPortrait) 128.dp else 192.dp
-    val widthOffset = if (isPortrait) 32.dp else 16.dp
+    val widthOffset = if (isPortrait) 16.dp else 8.dp
+    var stopHeadBoxHeight = if (isPortrait) 200.dp else 80.dp
+
     Column(
         modifier = Modifier
             .fillMaxHeight()
@@ -153,7 +155,8 @@ fun drawerContent(
         Column(
             modifier = Modifier
                 .width(width)
-                .fillMaxHeight(),
+                .fillMaxHeight()
+                .padding(start = widthOffset, end = widthOffset),
             verticalArrangement = Arrangement.Bottom,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -169,7 +172,6 @@ fun drawerContent(
                         chop.sendData("CONFIRM")
                     },
                     modifier = Modifier
-                        .width(width - widthOffset)
                         .height(connectionHeight),
                     fontSize = 12,
                     colors = listOf(
@@ -182,65 +184,59 @@ fun drawerContent(
             Spacer(modifier = Modifier.padding(8.dp))
 
             // Stopper head selector
-            var stopHeadBoxHeight = if (isPortrait) 164.dp else 80.dp
-
-            Box(
+            Column(
                 modifier = Modifier
-                    .width(width - widthOffset)
                     .height(stopHeadBoxHeight)
-                    .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(16.dp)),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Box(
+                Text(
+                    text = "Stopper Head",
                     modifier = Modifier
-                        .clickable {
-                            chop.changeStopHead() // Update external state
-                        }
-                ) {
-                    Text(
-                        text = "Stopper Head",
-                        modifier = Modifier
-                            .width(width - 16.dp)
-                            .align(Alignment.TopCenter)
-                            .padding(8.dp),
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp
-                    )
+                        .width(width - 16.dp)
+                        .padding(top = 8.dp),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp
+                )
 
-                    columnOrRow(
-                        useColumn = isPortrait,
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        content = {
+                columnOrRow(
+                    useColumn = isPortrait,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    content = {
+
+                        val stopHeadOptions = listOf("8ft", "10ft", "12ft")
+                        stopHeadOptions.forEach { option ->
+
+                            val stopHeadCardColors = if (chop.stopHead == option) {
+                                listOf(
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                                    MaterialTheme.colorScheme.onPrimary
+                                )
+                            } else {
+                                listOf(
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.75f),
+                                    MaterialTheme.colorScheme.onSecondary
+                                )
+                            }
+
                             ocoochCard(
-                                text = "8ft",
-                                onClick = { chop.changeStopHead("8ft") },
+                                text = option,
+                                onClick = { chop.changeStopHead(option) },
                                 modifier = Modifier
-                                    .width(48.dp)
-                                    .height(48.dp),
-                                fontSize = 16
-                            )
-                            ocoochCard(
-                                text = "10ft",
-                                onClick = { chop.changeStopHead("10ft") },
-                                modifier = Modifier
-                                    .width(48.dp)
-                                    .height(48.dp),
-                                fontSize = 16
-                            )
-                            ocoochCard(
-                                text = "12ft",
-                                onClick = { chop.changeStopHead("12ft") },
-                                modifier = Modifier
-                                    .width(48.dp)
-                                    .height(48.dp),
-                                fontSize = 16
+                                    .weight(1f),
+                                fontSize = 16,
+                                colors = stopHeadCardColors
                             )
                         }
-                    )
-                }
+                    }
+                )
             }
 
             Spacer(modifier = Modifier.padding(4.dp))
