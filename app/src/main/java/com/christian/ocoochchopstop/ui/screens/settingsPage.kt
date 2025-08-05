@@ -34,10 +34,11 @@ import com.christian.ocoochchopstop.ui.viewmodel.ChopStopViewModel
 fun settingsPage(chop: ChopStopViewModel) {
     val isPortrait = LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT
     val distanceDisplayWidth = if (isPortrait) 232.dp else 464.dp
-    val terminalWeight = if (isPortrait) 2f else 1f
     val numpadWeight = if (isPortrait) 1f else 2f
-    var anchorWidth by remember { mutableStateOf(0f) }
     val density = LocalDensity.current
+
+    var terminalWeight = if (isPortrait) 2f else 1f
+    var anchorWidth by remember { mutableStateOf(0f) }
 
     var inputMove by remember { mutableStateOf("") }
     var inputSpeed by remember { mutableStateOf("") }
@@ -113,6 +114,8 @@ fun settingsPage(chop: ChopStopViewModel) {
         modifier = Modifier
             .fillMaxSize()
     ) {
+        if (maxWidth < 420.dp && isPortrait) terminalWeight = 1.75f
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -272,20 +275,11 @@ fun settingsPage(chop: ChopStopViewModel) {
 
                                                 if (selectedDefault == key) {
                                                     isDefaultDouble = when (key) {
-                                                        "Speed" -> false
-                                                        "Accel" -> false
-                                                        "Max Delay" -> false
-                                                        "Min Delay" -> false
+                                                        "8ft Stop Head",
+                                                        "10ft Stop Head",
+                                                        "12ft Stop Head",
 
-                                                        "Step Position" -> false
-                                                        "Min Step Position" -> false
-                                                        "Max Step Position" -> false
-
-                                                        "8ft Stop Head" -> true
-                                                        "10ft Stop Head" -> true
-                                                        "12ft Stop Head" -> true
-
-                                                        "Steps/Inch" -> true
+                                                        "Steps/Inch",
                                                         "Steps/mm" -> true
                                                         else -> false
                                                     }

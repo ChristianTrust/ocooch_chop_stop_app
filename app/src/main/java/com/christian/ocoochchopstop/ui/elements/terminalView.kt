@@ -32,18 +32,11 @@ fun terminalView(
     var terminalTextColor = ocoochOrange80
     var terminalTextWeight = MaterialTheme.typography.bodySmall.fontWeight
 
-    LaunchedEffect(chop.terminalText.value) {
+    LaunchedEffect(chop.terminalText.value, scrollToEnd) {
         if (chop.terminalText.value.isNotEmpty()) {
             lazyListState.animateScrollToItem(chop.terminalText.value.size - 1)
         }
     }
-
-    LaunchedEffect(scrollToEnd) {
-        if (chop.terminalText.value.isNotEmpty()) {
-            lazyListState.animateScrollToItem(chop.terminalText.value.size - 1)
-        }
-    }
-
 
     Box(
         modifier = modifier

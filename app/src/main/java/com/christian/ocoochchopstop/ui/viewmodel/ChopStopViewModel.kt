@@ -48,49 +48,36 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         private val STOP_HEAD_KEY = stringPreferencesKey("stop_head")
     }
 
-    val speedFlow = application.applicationContext.dataStore.data.map { preferences ->
-        preferences[SPEED_KEY] ?: 20000
-    }
-    val accelFlow = application.applicationContext.dataStore.data.map { preferences ->
-        preferences[ACCEL_KEY] ?: 8000
-    }
-    val maxDelayFlow = application.applicationContext.dataStore.data.map { preferences ->
-        preferences[MAX_DELAY_KEY] ?: 320
-    }
-    val minDelayFlow = application.applicationContext.dataStore.data.map { preferences ->
-        preferences[MIN_DELAY_KEY] ?: 6
-    }
+    val speedFlow = application.applicationContext.dataStore.data
+        .map { preferences -> preferences[SPEED_KEY] ?: 20000 }
+    val accelFlow = application.applicationContext.dataStore.data
+        .map { preferences -> preferences[ACCEL_KEY] ?: 8000 }
+    val maxDelayFlow = application.applicationContext.dataStore.data
+        .map { preferences -> preferences[MAX_DELAY_KEY] ?: 320 }
+    val minDelayFlow = application.applicationContext.dataStore.data
+        .map { preferences -> preferences[MIN_DELAY_KEY] ?: 6 }
 
-    val stepPositionFlow = application.applicationContext.dataStore.data.map { preferences ->
-        preferences[STEP_POSITION_KEY] ?: 0
-    }
-    val minStepPositionFlow = application.applicationContext.dataStore.data.map { preferences ->
-        preferences[MIN_STEP_POSITION_KEY] ?: 0
-    }
-    val maxStepPositionFlow = application.applicationContext.dataStore.data.map { preferences ->
-        preferences[MAX_STEP_POSITION_KEY] ?: 166044
-    }
+    val stepPositionFlow = application.applicationContext.dataStore.data
+        .map { preferences -> preferences[STEP_POSITION_KEY] ?: 0 }
+    val minStepPositionFlow = application.applicationContext.dataStore.data
+        .map { preferences -> preferences[MIN_STEP_POSITION_KEY] ?: 0 }
+    val maxStepPositionFlow = application.applicationContext.dataStore.data
+        .map { preferences -> preferences[MAX_STEP_POSITION_KEY] ?: 166044 }
 
-    val eightFtStopHeadFlow = application.applicationContext.dataStore.data.map { preferences ->
-        preferences[EIGHT_FT_STOP_HEAD_KEY] ?: 2.6
-    }
-    val tenFtStopHeadFlow = application.applicationContext.dataStore.data.map { preferences ->
-        preferences[TEN_FT_STOP_HEAD_KEY] ?: 26.6
-    }
-    val twelveFtStopHeadFlow = application.applicationContext.dataStore.data.map { preferences ->
-        preferences[TWELVE_FT_STOP_HEAD_KEY] ?: 50.6
-    }
+    val eightFtStopHeadFlow = application.applicationContext.dataStore.data
+        .map { preferences -> preferences[EIGHT_FT_STOP_HEAD_KEY] ?: 2.6 }
+    val tenFtStopHeadFlow = application.applicationContext.dataStore.data
+        .map { preferences -> preferences[TEN_FT_STOP_HEAD_KEY] ?: 26.6 }
+    val twelveFtStopHeadFlow = application.applicationContext.dataStore.data
+        .map { preferences -> preferences[TWELVE_FT_STOP_HEAD_KEY] ?: 50.6 }
 
-    val stepsPerInchFlow = application.applicationContext.dataStore.data.map { preferences ->
-        preferences[STEPS_PER_INCH_KEY] ?: 1777.77777778
-    }
-    val stepsPerMmFlow = application.applicationContext.dataStore.data.map { preferences ->
-        preferences[STEPS_PER_MM_KEY] ?: 69.9912510935
-    }
+    val stepsPerInchFlow = application.applicationContext.dataStore.data
+        .map { preferences -> preferences[STEPS_PER_INCH_KEY] ?: 1777.77777778 }
+    val stepsPerMmFlow = application.applicationContext.dataStore.data
+        .map { preferences -> preferences[STEPS_PER_MM_KEY] ?: 69.9912510935 }
 
-    val stopHeadFlow = application.applicationContext.dataStore.data.map { preferences ->
-        preferences[STOP_HEAD_KEY] ?: "8ft"
-    }
+    val stopHeadFlow = application.applicationContext.dataStore.data
+        .map { preferences -> preferences[STOP_HEAD_KEY] ?: "8ft" }
 
     var speed by mutableStateOf(0)
     var accel by mutableStateOf(0)
@@ -151,75 +138,23 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
 
     init {
         // Observing dataStore values
-        viewModelScope.launch {
-            speedFlow.collect { speedValue ->
-                speed = speedValue // Update speed
-            }
-        }
-        viewModelScope.launch {
-            accelFlow.collect { accelValue ->
-                accel = accelValue // Update accel
-            }
-        }
-        viewModelScope.launch {
-            maxDelayFlow.collect { maxDelayValue ->
-                maxDelay = maxDelayValue // Update maxDelay
-            }
-        }
-        viewModelScope.launch {
-            minDelayFlow.collect { minDelayValue ->
-                minDelay = minDelayValue // Update minDelay
-            }
-        }
+        viewModelScope.launch { speedFlow.collect { speedValue -> speed = speedValue } }
+        viewModelScope.launch { accelFlow.collect { accelValue -> accel = accelValue } }
+        viewModelScope.launch { maxDelayFlow.collect { maxDelayValue -> maxDelay = maxDelayValue } }
+        viewModelScope.launch { minDelayFlow.collect { minDelayValue -> minDelay = minDelayValue } }
 
-        viewModelScope.launch {
-            stepPositionFlow.collect { stepPositionValue ->
-                stepPosition = stepPositionValue // Update stepPosition
-            }
-        }
-        viewModelScope.launch {
-            minStepPositionFlow.collect { minStepPositionValue ->
-                minStepPosition = minStepPositionValue // Update minStepPosition
-            }
-        }
-        viewModelScope.launch {
-            maxStepPositionFlow.collect { maxStepPositionValue ->
-                maxStepPosition = maxStepPositionValue // Update maxStepPosition
-            }
-        }
+        viewModelScope.launch { stepPositionFlow.collect { stepPositionValue -> stepPosition = stepPositionValue } }
+        viewModelScope.launch { minStepPositionFlow.collect { minStepPositionValue -> minStepPosition = minStepPositionValue } }
+        viewModelScope.launch { maxStepPositionFlow.collect { maxStepPositionValue -> maxStepPosition = maxStepPositionValue } }
 
-        viewModelScope.launch {
-            eightFtStopHeadFlow.collect { eightFtStopHeadValue ->
-                eightFtStopHead = eightFtStopHeadValue // Update eightFtStopHead
-            }
-        }
-        viewModelScope.launch {
-            tenFtStopHeadFlow.collect { tenFtStopHeadValue ->
-                tenFtStopHead = tenFtStopHeadValue // Update tenFtStopHead
-            }
-        }
-        viewModelScope.launch {
-            twelveFtStopHeadFlow.collect { twelveFtStopHeadValue ->
-                twelveFtStopHead = twelveFtStopHeadValue // Update twelveFtStopHead
-            }
-        }
+        viewModelScope.launch { eightFtStopHeadFlow.collect { eightFtStopHeadValue -> eightFtStopHead = eightFtStopHeadValue } }
+        viewModelScope.launch { tenFtStopHeadFlow.collect { tenFtStopHeadValue -> tenFtStopHead = tenFtStopHeadValue } }
+        viewModelScope.launch { twelveFtStopHeadFlow.collect { twelveFtStopHeadValue -> twelveFtStopHead = twelveFtStopHeadValue } }
 
-        viewModelScope.launch {
-            stepsPerInchFlow.collect { stepsPerInchValue ->
-                stepsPerInch = stepsPerInchValue // Update stepsPerInch
-            }
-        }
-        viewModelScope.launch {
-            stepsPerMmFlow.collect { stepsPerMmValue ->
-                stepsPerMm = stepsPerMmValue // Update stepsPerMm
-            }
-        }
+        viewModelScope.launch { stepsPerInchFlow.collect { stepsPerInchValue -> stepsPerInch = stepsPerInchValue } }
+        viewModelScope.launch { stepsPerMmFlow.collect { stepsPerMmValue -> stepsPerMm = stepsPerMmValue } }
 
-        viewModelScope.launch {
-            stopHeadFlow.collect { stopHeadValue ->
-                stopHead = stopHeadValue // Update stopHead
-            }
-        }
+        viewModelScope.launch { stopHeadFlow.collect { stopHeadValue -> stopHead = stopHeadValue } }
 
         // Register for USB events
         val filter = IntentFilter().apply {
