@@ -182,7 +182,7 @@ fun drawerContent(
             Spacer(modifier = Modifier.padding(8.dp))
 
             // Stopper head selector
-            var stopHeadBoxHeight = if (isPortrait) 164.dp else 80.dp
+            var stopHeadBoxHeight = if (isPortrait) 200.dp else 80.dp
 
             Box(
                 modifier = Modifier
@@ -190,18 +190,16 @@ fun drawerContent(
                     .height(stopHeadBoxHeight)
                     .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(16.dp))
             ) {
-                Box(
-                    modifier = Modifier
-                        .clickable {
-                            chop.changeStopHead() // Update external state
-                        }
+                Column(
+                    modifier = Modifier,
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
                         text = "Stopper Head",
                         modifier = Modifier
                             .width(width - 16.dp)
-                            .align(Alignment.TopCenter)
-                            .padding(8.dp),
+                            .padding(top = 8.dp),
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
@@ -210,33 +208,40 @@ fun drawerContent(
 
                     columnOrRow(
                         useColumn = isPortrait,
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(8.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         content = {
+                            val stopHeadCardColors = listOf(
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                                MaterialTheme.colorScheme.onPrimary
+                            )
+
                             ocoochCard(
                                 text = "8ft",
                                 onClick = { chop.changeStopHead("8ft") },
                                 modifier = Modifier
-                                    .width(48.dp)
-                                    .height(48.dp),
-                                fontSize = 16
+                                    .weight(1f),
+                                fontSize = 16,
+                                colors = stopHeadCardColors
                             )
                             ocoochCard(
                                 text = "10ft",
                                 onClick = { chop.changeStopHead("10ft") },
                                 modifier = Modifier
-                                    .width(48.dp)
-                                    .height(48.dp),
-                                fontSize = 16
+                                    .weight(1f),
+                                fontSize = 16,
+                                colors = stopHeadCardColors
                             )
                             ocoochCard(
                                 text = "12ft",
                                 onClick = { chop.changeStopHead("12ft") },
                                 modifier = Modifier
-                                    .width(48.dp)
-                                    .height(48.dp),
-                                fontSize = 16
+                                    .weight(1f),
+                                fontSize = 16,
+                                colors = stopHeadCardColors
                             )
                         }
                     )

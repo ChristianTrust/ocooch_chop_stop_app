@@ -22,6 +22,8 @@ import com.hoho.android.usbserial.driver.UsbSerialPort
 import com.hoho.android.usbserial.driver.UsbSerialProber
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.map
+import java.math.BigDecimal
+import java.math.RoundingMode
 import kotlin.math.round
 
 class ChopStopViewModel(application: Application) : AndroidViewModel(application) {
@@ -32,16 +34,16 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         private val MAX_DELAY_KEY = intPreferencesKey("max_delay")
         private val MIN_DELAY_KEY = intPreferencesKey("min_delay")
 
+        private val STEP_POSITION_KEY = intPreferencesKey("step_position")
+        private val MIN_STEP_POSITION_KEY = intPreferencesKey("min_step_position")
+        private val MAX_STEP_POSITION_KEY = intPreferencesKey("max_step_position")
+
         private val EIGHT_FT_STOP_HEAD_KEY = doublePreferencesKey("8ft_stop_head")
         private val TEN_FT_STOP_HEAD_KEY = doublePreferencesKey("10ft_stop_head")
         private val TWELVE_FT_STOP_HEAD_KEY = doublePreferencesKey("12ft_stop_head")
 
         private val STEPS_PER_INCH_KEY = doublePreferencesKey("steps_per_inch")
         private val STEPS_PER_MM_KEY = doublePreferencesKey("steps_per_mm")
-
-        private val STEP_POSITION_KEY = intPreferencesKey("step_position")
-        private val MIN_STEP_POSITION = intPreferencesKey("min_step_position")
-        private val MAX_STEP_POSITION = intPreferencesKey("max_step_position")
 
         private val STOP_HEAD_KEY = stringPreferencesKey("stop_head")
     }
@@ -57,6 +59,16 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     }
     val minDelayFlow = application.applicationContext.dataStore.data.map { preferences ->
         preferences[MIN_DELAY_KEY] ?: 6
+    }
+
+    val stepPositionFlow = application.applicationContext.dataStore.data.map { preferences ->
+        preferences[STEP_POSITION_KEY] ?: 0
+    }
+    val minStepPositionFlow = application.applicationContext.dataStore.data.map { preferences ->
+        preferences[MIN_STEP_POSITION_KEY] ?: 0
+    }
+    val maxStepPositionFlow = application.applicationContext.dataStore.data.map { preferences ->
+        preferences[MAX_STEP_POSITION_KEY] ?: 166044
     }
 
     val eightFtStopHeadFlow = application.applicationContext.dataStore.data.map { preferences ->
@@ -76,16 +88,6 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         preferences[STEPS_PER_MM_KEY] ?: 69.9912510935
     }
 
-    val stepPositionFlow = application.applicationContext.dataStore.data.map { preferences ->
-        preferences[STEP_POSITION_KEY] ?: 0
-    }
-    val minStepPositionFlow = application.applicationContext.dataStore.data.map { preferences ->
-        preferences[MIN_STEP_POSITION] ?: 0
-    }
-    val maxStepPositionFlow = application.applicationContext.dataStore.data.map { preferences ->
-        preferences[MAX_STEP_POSITION] ?: 170666
-    }
-
     val stopHeadFlow = application.applicationContext.dataStore.data.map { preferences ->
         preferences[STOP_HEAD_KEY] ?: "8ft"
     }
@@ -95,16 +97,16 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     var maxDelay by mutableStateOf(0)
     var minDelay by mutableStateOf(0)
 
+    var stepPosition by mutableStateOf(0)
+    var minStepPosition by mutableStateOf(0)
+    var maxStepPosition by mutableStateOf(0)
+
     var eightFtStopHead by mutableStateOf(0.0)
     var tenFtStopHead by mutableStateOf(0.0)
     var twelveFtStopHead by mutableStateOf(0.0)
 
     var stepsPerInch by mutableStateOf(0.0)
     var stepsPerMm by mutableStateOf(0.0)
-
-    var stepPosition by mutableStateOf(0)
-    var minStepPosition by mutableStateOf(0)
-    var maxStepPosition by mutableStateOf(170666)
 
     var stopHead by mutableStateOf("8ft")
 
@@ -117,8 +119,10 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     var isInch by mutableStateOf(true)
     var unit by mutableStateOf("")
     var unitMarker by mutableStateOf("")
-    var maxLength by mutableStateOf(96.0)
-    var isDecimal by mutableStateOf(false)
+
+    var showLengthError by mutableStateOf(false)
+    var lengthErrorTitle by mutableStateOf("")
+    var lengthErrorMessage by mutableStateOf("")
 
     val terminalText = mutableStateOf<List<String>>(listOf())
     val lastReadLine = mutableStateOf("")
@@ -169,6 +173,22 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         }
 
         viewModelScope.launch {
+            stepPositionFlow.collect { stepPositionValue ->
+                stepPosition = stepPositionValue // Update stepPosition
+            }
+        }
+        viewModelScope.launch {
+            minStepPositionFlow.collect { minStepPositionValue ->
+                minStepPosition = minStepPositionValue // Update minStepPosition
+            }
+        }
+        viewModelScope.launch {
+            maxStepPositionFlow.collect { maxStepPositionValue ->
+                maxStepPosition = maxStepPositionValue // Update maxStepPosition
+            }
+        }
+
+        viewModelScope.launch {
             eightFtStopHeadFlow.collect { eightFtStopHeadValue ->
                 eightFtStopHead = eightFtStopHeadValue // Update eightFtStopHead
             }
@@ -192,22 +212,6 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             stepsPerMmFlow.collect { stepsPerMmValue ->
                 stepsPerMm = stepsPerMmValue // Update stepsPerMm
-            }
-        }
-
-        viewModelScope.launch {
-            stepPositionFlow.collect { stepPositionValue ->
-                stepPosition = stepPositionValue // Update stepPosition
-            }
-        }
-        viewModelScope.launch {
-            minStepPositionFlow.collect { minStepPositionValue ->
-                minStepPosition = minStepPositionValue // Update minStepPosition
-            }
-        }
-        viewModelScope.launch {
-            maxStepPositionFlow.collect { maxStepPositionValue ->
-                maxStepPosition = maxStepPositionValue // Update maxStepPosition
             }
         }
 
@@ -260,6 +264,22 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    suspend fun setStepPosition(newStepPosition: Int) {
+        application.applicationContext.dataStore.edit { preferences ->
+            preferences[STEP_POSITION_KEY] = newStepPosition
+        }
+    }
+    suspend fun setMinStepPosition(newMinStepPosition: Int) {
+        application.applicationContext.dataStore.edit { preferences ->
+            preferences[MIN_STEP_POSITION_KEY] = newMinStepPosition
+        }
+    }
+    suspend fun setMaxStepPosition(newMaxStepPosition: Int) {
+        application.applicationContext.dataStore.edit { preferences ->
+            preferences[MAX_STEP_POSITION_KEY] = newMaxStepPosition
+        }
+    }
+
     suspend fun setEightFtStopHead(eightFtStopHead: Double) {
         application.applicationContext.dataStore.edit { preferences ->
             preferences[EIGHT_FT_STOP_HEAD_KEY] = eightFtStopHead
@@ -287,27 +307,79 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    suspend fun setStepPosition(newStepPosition: Int) {
-        application.applicationContext.dataStore.edit { preferences ->
-            preferences[STEP_POSITION_KEY] = newStepPosition
-        }
-    }
-    suspend fun setMinStepPosition(newMinStepPosition: Int) {
-        application.applicationContext.dataStore.edit { preferences ->
-            preferences[MIN_STEP_POSITION] = newMinStepPosition
-        }
-        minStepPosition = newMinStepPosition
-    }
-    suspend fun setMaxStepPosition(newMaxStepPosition: Int) {
-        application.applicationContext.dataStore.edit { preferences ->
-            preferences[MAX_STEP_POSITION] = newMaxStepPosition
-        }
-        maxStepPosition = newMaxStepPosition
-    }
-
     suspend fun setStopHead(stopHead: String) {
         application.applicationContext.dataStore.edit { preferences ->
             preferences[STOP_HEAD_KEY] = stopHead
+        }
+    }
+
+    fun resetDefault(key: String) {
+        viewModelScope.launch {
+            when (key) {
+                "Speed" -> {
+                    application.applicationContext.dataStore.edit { preferences ->
+                        preferences.remove(SPEED_KEY)
+                    }
+                }
+                "Accel" -> {
+                    application.applicationContext.dataStore.edit { preferences ->
+                        preferences.remove(ACCEL_KEY)
+                    }
+                }
+                "Max Delay" -> {
+                    application.applicationContext.dataStore.edit { preferences ->
+                        preferences.remove(MAX_DELAY_KEY)
+                    }
+                }
+                "Min Delay" -> {
+                    application.applicationContext.dataStore.edit { preferences ->
+                        preferences.remove(MIN_DELAY_KEY)
+                    }
+                }
+
+                "Step Position" -> {
+                    application.applicationContext.dataStore.edit { preferences ->
+                        preferences.remove(STEP_POSITION_KEY)
+                    }
+                }
+                "Min Step Position" -> {
+                    application.applicationContext.dataStore.edit { preferences ->
+                        preferences.remove(MIN_STEP_POSITION_KEY)
+                    }
+                }
+                "Max Step Position" -> {
+                    application.applicationContext.dataStore.edit { preferences ->
+                        preferences.remove(MAX_STEP_POSITION_KEY)
+                    }
+                }
+
+                "8ft Stop Head" -> {
+                    application.applicationContext.dataStore.edit { preferences ->
+                        preferences.remove(EIGHT_FT_STOP_HEAD_KEY)
+                    }
+                }
+                "10ft Stop Head" -> {
+                    application.applicationContext.dataStore.edit { preferences ->
+                        preferences.remove(TEN_FT_STOP_HEAD_KEY)
+                    }
+                }
+                "12ft Stop Head" -> {
+                    application.applicationContext.dataStore.edit { preferences ->
+                        preferences.remove(TWELVE_FT_STOP_HEAD_KEY)
+                    }
+                }
+
+                "Steps/Inch" -> {
+                    application.applicationContext.dataStore.edit { preferences ->
+                        preferences.remove(STEPS_PER_INCH_KEY)
+                    }
+                }
+                "Steps/mm" -> {
+                    application.applicationContext.dataStore.edit { preferences ->
+                        preferences.remove(STEPS_PER_MM_KEY)
+                    }
+                }
+            }
         }
     }
 
@@ -319,6 +391,10 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                 "Max Delay" -> setMaxDelay(maxDelay)
                 "Min Delay" -> setMinDelay(minDelay)
 
+                "Step Position" -> setStepPosition(stepPosition)
+                "Min Step Position" -> setMinStepPosition(minStepPosition)
+                "Max Step Position" -> setMaxStepPosition(maxStepPosition)
+
                 "8ft Stop Head" -> setEightFtStopHead(eightFtStopHead)
                 "10ft Stop Head" -> setTenFtStopHead(tenFtStopHead)
                 "12ft Stop Head" -> setTwelveFtStopHead(twelveFtStopHead)
@@ -326,24 +402,47 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                 "Steps/Inch" -> setStepsPerInch(stepsPerInch)
                 "Steps/mm" -> setStepsPerMm(stepsPerMm)
 
-                "Step Position" -> setStepPosition(stepPosition)
-                "Min Step Position" -> setMinStepPosition(minStepPosition)
-                "Max Step Position" -> setMaxStepPosition(maxStepPosition)
-
                 "Stop Head" -> setStopHead(stopHead)
             }
         }
     }
 
+    fun getStopHeadSteps(): Int {
+        return when (stopHead) {
+            "8ft" -> (eightFtStopHead * stepsPerInch).toInt()
+            "10ft" -> (tenFtStopHead * stepsPerInch).toInt()
+            "12ft" -> (twelveFtStopHead * stepsPerInch).toInt()
+            else -> 0
+        }
+    }
+
     fun moveSteps(steps: Int) {
+        var logMessage = ""
+        val inches = BigDecimal((stepPosition + getStopHeadSteps() + steps) / stepsPerInch)
+            .setScale(3, RoundingMode.HALF_UP)
+            .stripTrailingZeros()
+            .toPlainString()
+
         if (steps < 0) {
             if (stepPosition + steps < minStepPosition) {
-                log("Can't move $steps steps below min step position", "[ERR]")
+                logMessage = "$inches\" is below the min position"
+                log(logMessage, "[ERR]")
+
+                showLengthError = true
+                lengthErrorTitle = "Too Short"
+                lengthErrorMessage = "$inches\" is below the minimum length"
+
                 return
             }
         } else {
             if (stepPosition + steps > maxStepPosition) {
-                log("Can't move $steps steps above max step position", "[ERR]")
+                logMessage = "$inches\" is above the max position"
+                log(logMessage, "[ERR]")
+
+                showLengthError = true
+                lengthErrorTitle = "Too Long"
+                lengthErrorMessage = "$inches\" is above the maximum length"
+
                 return
             }
         }
@@ -372,94 +471,41 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
             }
         }
 
-        moveSteps(stepsToGo)
+        moveSteps(stepsToGo - getStopHeadSteps())
         clearInput()
     }
 
-    fun addToNumber(number: String) {
-        val maxDecimalPlaces = if (isInch) 4 else 2
-        val maxDigits = if (isInch) 7 else 7
-
-        inputNumber += number
-
-        if (!isDecimal) {
-            isDecimal = (number == ".")
-
-            if (inputNumber == ".") {
-                inputNumber = "0."
-            }
-        }
-
-        if (inputNumber == "00") {
-            inputNumber = "0"
-        }
-
-        // Limit the number of characters
-        if (inputNumber.length > maxDigits) {
-            inputNumber = inputNumber.substring(0, maxDigits)
-            validNumber = inputNumber
-            isInvalidInput = true
-        }
-
-        // Check and limit decimal places
-        if (inputNumber.contains(".")) {
-            val parts = inputNumber.split(".")
-            var mainPart = parts[0]
-            var decimalPart = parts[1]
-
-            if (parts.size == 2) {
-                if (decimalPart.length > maxDecimalPlaces) {
-                    validNumber = "${mainPart}.${decimalPart.substring(0, maxDecimalPlaces)}"
-                    isInvalidInput = true
-                }
-            }
-        }
-
-        inputNumber.toDoubleOrNull()?.let { num ->
-            if (num > maxLength) {
-                validNumber = inputNumber.substring(0, inputNumber.length - 1)
-                isInvalidInput = true
-            }
-        }
-    }
-
-    fun changeStopHead(head: String = "8ft") {
-        stopHead = head
-        saveSettings("Stop Head")
-    }
-
-    fun toggleInch() {
-        isInch = !isInch
-        unit = if (isInch) "INCH:" else "MM:"
-        unitMarker = if (isInch) "\"" else "mm"
-        maxLength = if (isInch) 96.0 else 2440.0
-
-        inputNumber.toDoubleOrNull()?.let { num ->
-            var newNum = num
-
-            while (newNum > maxLength) {
-                newNum = newNum / 10
-            }
-            inputNumber = newNum.toString()
-        }
-
-        addToNumber("")
-    }
-
-    fun back() {
-        if (inputNumber.isNotEmpty()) {
-            if (inputNumber.last() == '.') {
-                isDecimal = false
-            }
-            inputNumber = inputNumber.substring(0, inputNumber.length - 1)
-        }
+    fun closeLengthError() {
+        showLengthError = false
+        lengthErrorTitle = ""
+        lengthErrorMessage = ""
     }
 
     fun clearInput() {
         inputNumber = ""
         validNumber = ""
         isInvalidInput = false
-        isDecimal = false
+    }
+
+    fun toggleInch() { // TODO: Fix this
+        isInch = !isInch
+        unit = if (isInch) "INCH:" else "MM:"
+        unitMarker = if (isInch) "\"" else "mm"
+//        maxInputLength = if (isInch) 96.0 else 2440.0
+
+        inputNumber.toDoubleOrNull()?.let { num ->
+            var newNum = num
+
+//            while (newNum > maxInputLength) {
+//                newNum = newNum / 10
+//            }
+            inputNumber = newNum.toString()
+        }
+    }
+
+    fun changeStopHead(head: String = "8ft") {
+        stopHead = head
+        saveSettings("Stop Head")
     }
 
     internal fun connectToDevice() {
@@ -631,8 +677,8 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         }
 
         unitPosition = (if (unit == "INCH:") {
-            "%.3f".format(stepPosition / stepsPerInch)
-        } else "%.1f".format(stepPosition / stepsPerMm))
+            "%.3f".format((stepPosition + getStopHeadSteps()) / stepsPerInch)
+        } else "%.1f".format((stepPosition + getStopHeadSteps()) / stepsPerMm))
 
         return unitPosition
     }

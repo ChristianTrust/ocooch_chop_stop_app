@@ -1,6 +1,8 @@
 package com.christian.ocoochchopstop.ui.util
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
@@ -44,25 +46,31 @@ fun ocoochCard(
                 .fillMaxSize()
                 .wrapContentSize(Alignment.Center)
         ) {
-            if (icon != null) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(fontSize.dp)
-                )
-            }
-            if (text != null) {
-                Text(
-                    text = text.toString(),
-                    fontSize = fontSize.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            }
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (icon != null) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(fontSize.dp)
+                    )
+                }
+                if (text != null) {
+                    Text(
+                        text = text.toString(),
+                        fontSize = fontSize.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
 
-            content()
+                content()
+            }
         }
     }
 }
