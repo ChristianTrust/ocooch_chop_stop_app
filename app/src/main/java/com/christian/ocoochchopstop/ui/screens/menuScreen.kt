@@ -210,34 +210,31 @@ fun drawerContent(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     content = {
-                        val stopHeadCardColors = listOf(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
-                            MaterialTheme.colorScheme.onPrimary
-                        )
-                        val stopHeadCardModifier = Modifier
-                            .weight(1f)
 
-                        ocoochCard(
-                            text = "8ft",
-                            onClick = { chop.changeStopHead("8ft") },
-                            modifier = stopHeadCardModifier,
-                            fontSize = 16,
-                            colors = stopHeadCardColors
-                        )
-                        ocoochCard(
-                            text = "10ft",
-                            onClick = { chop.changeStopHead("10ft") },
-                            modifier = stopHeadCardModifier,
-                            fontSize = 16,
-                            colors = stopHeadCardColors
-                        )
-                        ocoochCard(
-                            text = "12ft",
-                            onClick = { chop.changeStopHead("12ft") },
-                            modifier = stopHeadCardModifier,
-                            fontSize = 16,
-                            colors = stopHeadCardColors
-                        )
+                        val stopHeadOptions = listOf("8ft", "10ft", "12ft")
+                        stopHeadOptions.forEach { option ->
+
+                            val stopHeadCardColors = if (chop.stopHead == option) {
+                                listOf(
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                                    MaterialTheme.colorScheme.onPrimary
+                                )
+                            } else {
+                                listOf(
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.75f),
+                                    MaterialTheme.colorScheme.onSecondary
+                                )
+                            }
+
+                            ocoochCard(
+                                text = option,
+                                onClick = { chop.changeStopHead(option) },
+                                modifier = Modifier
+                                    .weight(1f),
+                                fontSize = 16,
+                                colors = stopHeadCardColors
+                            )
+                        }
                     }
                 )
             }
