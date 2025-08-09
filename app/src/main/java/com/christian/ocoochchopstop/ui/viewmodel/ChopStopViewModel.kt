@@ -106,11 +106,15 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     var isInch by mutableStateOf(true)
     var unit by mutableStateOf("")
     var unitMarker by mutableStateOf("")
+    var moving by mutableStateOf(false)
+    var stopping by mutableStateOf(false)
+    var homing by mutableStateOf(false)
 
     var showLengthError by mutableStateOf(false)
     var lengthErrorTitle by mutableStateOf("")
     var lengthErrorMessage by mutableStateOf("")
 
+    val moveBuffer = mutableStateOf<List<Int>>(listOf())
     val terminalText = mutableStateOf<List<String>>(listOf())
     val lastReadLine = mutableStateOf("")
 
@@ -381,7 +385,14 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                 return
             }
         }
-        sendData("MOVE:$steps")
+
+        if (moving) {
+            sendData("STOP")
+            stopping = true
+            moveBuffer.value = moveBuffer.value + steps
+        } else {
+            sendData("MOVE:$steps")
+        }
     }
 
     fun goToPosition(unitType: String = this.unit, distance: Float = this.inputNumber.toFloat()) {
@@ -408,6 +419,15 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
 
         moveSteps(stepsToGo - getStopHeadSteps())
         clearInput()
+    }
+
+    fun home(ready: Boolean) {
+        if (!ready) {
+            homing = true
+            sendData("MOVE:200")
+        } else {
+            sendData("HOME")
+        }
     }
 
     fun closeLengthError() {
@@ -538,9 +558,23 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         }
         else if (line == "STARTED") {
             moveTimer(true)
+            moving = true
         }
         else if (line == "STOPPED") {
             moveTimer(false)
+            moving = false
+
+            if (stopping) {
+                moveSteps(moveBuffer.value.first())
+                moveBuffer.value = moveBuffer.value.drop(1)
+                if (moveBuffer.value.isEmpty()) {
+                    stopping = false
+                }
+            }
+
+            if (homing) {
+                home(true)
+            }
         }
         else if (line == "MEGA READY") {
             setMegaParameters("all")
@@ -549,6 +583,8 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                 delay(1000)
                 sendData("LOG")
             }
+        } else if (line == "HOME") {
+            homing = false
         }
     }
 
@@ -591,6 +627,10 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     fun sendData(text: String) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
+                if (homing) {
+                    log("Homing in progress", "[ERR]")
+                    return@launch
+                }
                 val data = (text + "\n").toByteArray()
                 port?.write(data, 1000)
                 withContext(Dispatchers.Main) {

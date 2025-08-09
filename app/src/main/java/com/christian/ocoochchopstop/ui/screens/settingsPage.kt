@@ -73,8 +73,8 @@ fun settingsPage(chop: ChopStopViewModel) {
         Pair("Steps/mm", chop.stepsPerMm)
     )
 //    val commands = listOf("MOVE:", "SPEED:", "ACCEL:", "MAX_DELAY:", "MIN_DELAY:", "HOME", "LOG", "POS")
-    val commands = listOf("MOVE:", "HOME", "LOG")
-    val singleCommands = listOf("HOME", "LOG")
+    val commands = listOf("MOVE:", "STOP", "HOME", "LOG")
+    val singleCommands = listOf("STOP", "HOME", "LOG")
     val isSingleCommand = selectedOption in singleCommands
 
     fun applyAndCloseDefault(key: String) {
@@ -568,6 +568,8 @@ fun settingsPage(chop: ChopStopViewModel) {
                                         onClick = {
                                             if (selectedOption == "MOVE:") {
                                                 chop.moveSteps(inputNumber.toInt())
+                                            } else if (selectedOption == "HOME") {
+                                                chop.home(false)
                                             } else {
                                                 chop.sendData(command)
                                             }
