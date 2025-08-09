@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import androidx.navigation.NavHostController
 import com.christian.ocoochchopstop.ui.util.columnOrRow
 import com.christian.ocoochchopstop.ui.viewmodel.ChopStopViewModel
 import com.christian.ocoochchopstop.ui.elements.distanceDisplay
@@ -21,7 +22,7 @@ import com.christian.ocoochchopstop.ui.input.addToMain
 import com.christian.ocoochchopstop.ui.util.ocoochCard
 
 @Composable
-fun homePage(chop: ChopStopViewModel) {
+fun homePage(chop: ChopStopViewModel, navController: NavHostController) {
     val isPortrait = LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT
     val padding = 8.dp
 
@@ -66,7 +67,7 @@ fun homePage(chop: ChopStopViewModel) {
                         chop.getDisplayPosition()
                     } else chop.inputNumber
 
-                    distanceDisplay(chop, 160.dp, distance)
+                    distanceDisplay(chop, navController, 160.dp, distance)
 
                     Column {
                         val showGoButton = (chop.inputNumber.isNotEmpty())

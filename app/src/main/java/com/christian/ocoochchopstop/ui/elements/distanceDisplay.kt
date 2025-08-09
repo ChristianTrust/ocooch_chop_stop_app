@@ -2,6 +2,7 @@ package com.christian.ocoochchopstop.ui.elements
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
@@ -19,12 +20,14 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import androidx.navigation.NavHostController
 import com.christian.ocoochchopstop.ui.viewmodel.ChopStopViewModel
 import kotlinx.coroutines.delay
 
 @Composable
 fun distanceDisplay(
     chop: ChopStopViewModel,
+    navController: NavHostController,
     width: Dp,
     distance: String = chop.getDisplayPosition(),
     modifier: Modifier = Modifier
@@ -76,7 +79,12 @@ fun distanceDisplay(
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface,
             fontSize = fontSize,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.clickable {
+                if (distance == "STATE: Disconnected") {
+                    navController.navigate("dino_game")
+                }
+            }
         )
 
         val unitHeight = if (chop.isInch) 48.dp else 28.dp

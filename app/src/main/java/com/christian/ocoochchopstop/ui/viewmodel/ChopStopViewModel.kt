@@ -106,6 +106,11 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     var isInch by mutableStateOf(true)
     var unit by mutableStateOf("")
     var unitMarker by mutableStateOf("")
+    var isMoving by mutableStateOf(false)
+    var isStopping by mutableStateOf(false)
+    var isHoming by mutableStateOf(false)
+    //var newMovePosition by mutableStateOf(0)
+    var newMoveDistance by mutableStateOf(0f)
 
     var showLengthError by mutableStateOf(false)
     var lengthErrorTitle by mutableStateOf("")
@@ -381,7 +386,16 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                 return
             }
         }
-        sendData("MOVE:$steps")
+
+        //if (isMoving) {
+        //    if (!isStopping) {
+        //        sendData("STOP")
+        //        isStopping = true
+        //    }
+        //    newMovePosition = steps
+        //} else {
+            sendData("MOVE:$steps")
+        //}
     }
 
     fun goToPosition(unitType: String = this.unit, distance: Float = this.inputNumber.toFloat()) {
@@ -406,8 +420,25 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
             }
         }
 
-        moveSteps(stepsToGo - getStopHeadSteps())
-        clearInput()
+        if (isMoving) {
+            if (!isStopping) {
+                sendData("STOP")
+                isStopping = true
+            }
+            newMoveDistance = distance
+        } else {
+            moveSteps(stepsToGo - getStopHeadSteps())
+            clearInput()
+        }
+    }
+
+    fun home(ready: Boolean) {
+        if (!ready) {
+            isHoming = true
+            sendData("MOVE:200", true)
+        } else {
+            sendData("HOME", true)
+        }
     }
 
     fun closeLengthError() {
@@ -538,9 +569,21 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         }
         else if (line == "STARTED") {
             moveTimer(true)
+            isMoving = true
         }
         else if (line == "STOPPED") {
             moveTimer(false)
+            isMoving = false
+
+            if (isStopping) {
+                goToPosition(unit, newMoveDistance)
+                newMoveDistance = 0f
+                isStopping = false
+            }
+
+            if (isHoming) {
+                home(true)
+            }
         }
         else if (line == "MEGA READY") {
             setMegaParameters("all")
@@ -549,6 +592,8 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                 delay(1000)
                 sendData("LOG")
             }
+        } else if (line == "HOME") {
+            isHoming = false
         }
     }
 
@@ -588,9 +633,13 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     }
 
 
-    fun sendData(text: String) {
+    fun sendData(text: String, force: Boolean = false) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
+                if (isHoming && !force) {
+                    log("Homing in progress", "[ERR]")
+                    return@launch
+                }
                 val data = (text + "\n").toByteArray()
                 port?.write(data, 1000)
                 withContext(Dispatchers.Main) {

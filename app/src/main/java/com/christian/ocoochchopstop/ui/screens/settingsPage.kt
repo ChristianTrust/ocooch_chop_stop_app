@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.zIndex
+import androidx.navigation.NavHostController
 import com.christian.ocoochchopstop.ui.elements.distanceDisplay
 import com.christian.ocoochchopstop.ui.elements.numpad
 import com.christian.ocoochchopstop.ui.elements.terminalView
@@ -31,7 +32,7 @@ import com.christian.ocoochchopstop.ui.util.ocoochCard
 import com.christian.ocoochchopstop.ui.viewmodel.ChopStopViewModel
 
 @Composable
-fun settingsPage(chop: ChopStopViewModel) {
+fun settingsPage(chop: ChopStopViewModel, navController: NavHostController) {
     val isPortrait = LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT
     val distanceDisplayWidth = if (isPortrait) 232.dp else 464.dp
     val numpadWeight = if (isPortrait) 1f else 2f
@@ -73,8 +74,8 @@ fun settingsPage(chop: ChopStopViewModel) {
         Pair("Steps/mm", chop.stepsPerMm)
     )
 //    val commands = listOf("MOVE:", "SPEED:", "ACCEL:", "MAX_DELAY:", "MIN_DELAY:", "HOME", "LOG", "POS")
-    val commands = listOf("MOVE:", "HOME", "LOG")
-    val singleCommands = listOf("HOME", "LOG")
+    val commands = listOf("MOVE:", "STOP", "HOME", "LOG")
+    val singleCommands = listOf("STOP", "HOME", "LOG")
     val isSingleCommand = selectedOption in singleCommands
 
     fun applyAndCloseDefault(key: String) {
@@ -125,7 +126,7 @@ fun settingsPage(chop: ChopStopViewModel) {
                     .fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
             ) {
-                distanceDisplay(chop, distanceDisplayWidth)
+                distanceDisplay(chop, navController, distanceDisplayWidth)
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -568,13 +569,15 @@ fun settingsPage(chop: ChopStopViewModel) {
                                         onClick = {
                                             if (selectedOption == "MOVE:") {
                                                 chop.moveSteps(inputNumber.toInt())
+                                            } else if (selectedOption == "HOME") {
+                                                chop.home(false)
                                             } else {
                                                 chop.sendData(command)
                                             }
                                         },
                                         modifier = Modifier.weight(1f),
                                         fontSize = 24,
-                                        enabled = isSingleCommand || (inputNumber.isNotBlank() && inputNumber != "-")
+                                        enabled = (isSingleCommand || (inputNumber.isNotBlank() && inputNumber != "-")) && !chop.isHoming
                                     )
 
                                     Spacer(modifier = Modifier.padding(4.dp))
