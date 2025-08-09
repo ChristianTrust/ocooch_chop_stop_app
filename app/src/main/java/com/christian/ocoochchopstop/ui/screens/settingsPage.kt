@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.zIndex
+import androidx.navigation.NavHostController
 import com.christian.ocoochchopstop.ui.elements.distanceDisplay
 import com.christian.ocoochchopstop.ui.elements.numpad
 import com.christian.ocoochchopstop.ui.elements.terminalView
@@ -31,7 +32,7 @@ import com.christian.ocoochchopstop.ui.util.ocoochCard
 import com.christian.ocoochchopstop.ui.viewmodel.ChopStopViewModel
 
 @Composable
-fun settingsPage(chop: ChopStopViewModel) {
+fun settingsPage(chop: ChopStopViewModel, navController: NavHostController) {
     val isPortrait = LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT
     val distanceDisplayWidth = if (isPortrait) 232.dp else 464.dp
     val numpadWeight = if (isPortrait) 1f else 2f
@@ -125,7 +126,7 @@ fun settingsPage(chop: ChopStopViewModel) {
                     .fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
             ) {
-                distanceDisplay(chop, distanceDisplayWidth)
+                distanceDisplay(chop, navController, distanceDisplayWidth)
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -576,7 +577,7 @@ fun settingsPage(chop: ChopStopViewModel) {
                                         },
                                         modifier = Modifier.weight(1f),
                                         fontSize = 24,
-                                        enabled = isSingleCommand || (inputNumber.isNotBlank() && inputNumber != "-")
+                                        enabled = (isSingleCommand || (inputNumber.isNotBlank() && inputNumber != "-")) && !chop.isHoming
                                     )
 
                                     Spacer(modifier = Modifier.padding(4.dp))

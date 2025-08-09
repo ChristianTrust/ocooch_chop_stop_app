@@ -106,15 +106,16 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     var isInch by mutableStateOf(true)
     var unit by mutableStateOf("")
     var unitMarker by mutableStateOf("")
-    var moving by mutableStateOf(false)
-    var stopping by mutableStateOf(false)
-    var homing by mutableStateOf(false)
+    var isMoving by mutableStateOf(false)
+    var isStopping by mutableStateOf(false)
+    var isHoming by mutableStateOf(false)
+    //var newMovePosition by mutableStateOf(0)
+    var newMoveDistance by mutableStateOf(0f)
 
     var showLengthError by mutableStateOf(false)
     var lengthErrorTitle by mutableStateOf("")
     var lengthErrorMessage by mutableStateOf("")
 
-    val moveBuffer = mutableStateOf<List<Int>>(listOf())
     val terminalText = mutableStateOf<List<String>>(listOf())
     val lastReadLine = mutableStateOf("")
 
@@ -386,13 +387,15 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
             }
         }
 
-        if (moving) {
-            sendData("STOP")
-            stopping = true
-            moveBuffer.value = moveBuffer.value + steps
-        } else {
+        //if (isMoving) {
+        //    if (!isStopping) {
+        //        sendData("STOP")
+        //        isStopping = true
+        //    }
+        //    newMovePosition = steps
+        //} else {
             sendData("MOVE:$steps")
-        }
+        //}
     }
 
     fun goToPosition(unitType: String = this.unit, distance: Float = this.inputNumber.toFloat()) {
@@ -417,16 +420,24 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
             }
         }
 
-        moveSteps(stepsToGo - getStopHeadSteps())
-        clearInput()
+        if (isMoving) {
+            if (!isStopping) {
+                sendData("STOP")
+                isStopping = true
+            }
+            newMoveDistance = distance
+        } else {
+            moveSteps(stepsToGo - getStopHeadSteps())
+            clearInput()
+        }
     }
 
     fun home(ready: Boolean) {
         if (!ready) {
-            homing = true
-            sendData("MOVE:200")
+            isHoming = true
+            sendData("MOVE:200", true)
         } else {
-            sendData("HOME")
+            sendData("HOME", true)
         }
     }
 
@@ -558,21 +569,19 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         }
         else if (line == "STARTED") {
             moveTimer(true)
-            moving = true
+            isMoving = true
         }
         else if (line == "STOPPED") {
             moveTimer(false)
-            moving = false
+            isMoving = false
 
-            if (stopping) {
-                moveSteps(moveBuffer.value.first())
-                moveBuffer.value = moveBuffer.value.drop(1)
-                if (moveBuffer.value.isEmpty()) {
-                    stopping = false
-                }
+            if (isStopping) {
+                goToPosition(unit, newMoveDistance)
+                newMoveDistance = 0f
+                isStopping = false
             }
 
-            if (homing) {
+            if (isHoming) {
                 home(true)
             }
         }
@@ -584,7 +593,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                 sendData("LOG")
             }
         } else if (line == "HOME") {
-            homing = false
+            isHoming = false
         }
     }
 
@@ -624,10 +633,10 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     }
 
 
-    fun sendData(text: String) {
+    fun sendData(text: String, force: Boolean = false) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                if (homing) {
+                if (isHoming && !force) {
                     log("Homing in progress", "[ERR]")
                     return@launch
                 }

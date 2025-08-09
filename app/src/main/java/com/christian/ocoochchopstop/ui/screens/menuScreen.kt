@@ -52,8 +52,9 @@ fun menuScreen(chop: ChopStopViewModel) {
                     startDestination = "home",
                     modifier = Modifier.padding(8.dp)
                 ) {
-                    composable("home") { homePage(chop) }
-                    composable("settings") { settingsPage(chop) }
+                    composable("home") { homePage(chop, navController) }
+                    composable("settings") { settingsPage(chop, navController) }
+                    composable("dino_game") { dinoGame() }
                 }
                 IconButton(
                     onClick = { scope.launch { drawerState.open() } },
