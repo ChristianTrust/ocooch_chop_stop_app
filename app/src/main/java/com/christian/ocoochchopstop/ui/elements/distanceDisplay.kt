@@ -69,7 +69,12 @@ fun distanceDisplay(
             .clip(CircleShape)
             .border(3.dp, borderColor, CircleShape)
             .background(backgroundColor)
-            .zIndex(100f),
+            .zIndex(100f)
+            .clickable {
+                if (distance == "STATE: Disconnected") {
+                    navController.navigate("dino_game")
+                }
+            },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center
     ) {
@@ -79,12 +84,7 @@ fun distanceDisplay(
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface,
             fontSize = fontSize,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.clickable {
-                if (distance == "STATE: Disconnected") {
-                    navController.navigate("dino_game")
-                }
-            }
+            fontWeight = FontWeight.Bold
         )
 
         val unitHeight = if (chop.isInch) 48.dp else 28.dp
