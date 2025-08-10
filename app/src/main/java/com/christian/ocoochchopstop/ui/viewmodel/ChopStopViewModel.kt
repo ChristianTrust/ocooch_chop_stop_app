@@ -48,6 +48,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         private val STOP_HEAD_KEY = stringPreferencesKey("stop_head")
     }
 
+    // Flow variables
     val speedFlow = application.applicationContext.dataStore.data
         .map { preferences -> preferences[SPEED_KEY] ?: 20000 }
     val accelFlow = application.applicationContext.dataStore.data
@@ -109,8 +110,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     var isMoving by mutableStateOf(false)
     var isStopping by mutableStateOf(false)
     var isHoming by mutableStateOf(false)
-    //var newMovePosition by mutableStateOf(0)
-    var newMoveDistance by mutableStateOf(0f)
+    var newMovePosition by mutableStateOf(0)
 
     var showLengthError by mutableStateOf(false)
     var lengthErrorTitle by mutableStateOf("")
@@ -173,6 +173,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         unit = if (isInch) "INCH:" else "MM:"
         unitMarker = if (isInch) "\"" else "mm"
 
+        // Wait for parameters to be set
         viewModelScope.launch {
             var tries = 0
             while (!parametersSet && tries < 10) {
@@ -180,76 +181,6 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                 tries++
                 delay(5000)
             }
-        }
-    }
-
-    suspend fun setSpeed(speed: Int) {
-        application.applicationContext.dataStore.edit { preferences ->
-            preferences[SPEED_KEY] = speed
-        }
-    }
-    suspend fun setAccel(accel: Int) {
-        application.applicationContext.dataStore.edit { preferences ->
-            preferences[ACCEL_KEY] = accel
-        }
-    }
-    suspend fun setMaxDelay(maxDelay: Int) {
-        application.applicationContext.dataStore.edit { preferences ->
-            preferences[MAX_DELAY_KEY] = maxDelay
-        }
-    }
-    suspend fun setMinDelay(minDelay: Int) {
-        application.applicationContext.dataStore.edit { preferences ->
-            preferences[MIN_DELAY_KEY] = minDelay
-        }
-    }
-
-    suspend fun setStepPosition(newStepPosition: Int) {
-        application.applicationContext.dataStore.edit { preferences ->
-            preferences[STEP_POSITION_KEY] = newStepPosition
-        }
-    }
-    suspend fun setMinStepPosition(newMinStepPosition: Int) {
-        application.applicationContext.dataStore.edit { preferences ->
-            preferences[MIN_STEP_POSITION_KEY] = newMinStepPosition
-        }
-    }
-    suspend fun setMaxStepPosition(newMaxStepPosition: Int) {
-        application.applicationContext.dataStore.edit { preferences ->
-            preferences[MAX_STEP_POSITION_KEY] = newMaxStepPosition
-        }
-    }
-
-    suspend fun setEightFtStopHead(eightFtStopHead: Double) {
-        application.applicationContext.dataStore.edit { preferences ->
-            preferences[EIGHT_FT_STOP_HEAD_KEY] = eightFtStopHead
-        }
-    }
-    suspend fun setTenFtStopHead(tenFtStopHead: Double) {
-        application.applicationContext.dataStore.edit { preferences ->
-            preferences[TEN_FT_STOP_HEAD_KEY] = tenFtStopHead
-        }
-    }
-    suspend fun setTwelveFtStopHead(twelveFtStopHead: Double) {
-        application.applicationContext.dataStore.edit { preferences ->
-            preferences[TWELVE_FT_STOP_HEAD_KEY] = twelveFtStopHead
-        }
-    }
-
-    suspend fun setStepsPerInch(stepsPerInch: Double) {
-        application.applicationContext.dataStore.edit { preferences ->
-            preferences[STEPS_PER_INCH_KEY] = stepsPerInch
-        }
-    }
-    suspend fun setStepsPerMm(stepsPerMm: Double) {
-        application.applicationContext.dataStore.edit { preferences ->
-            preferences[STEPS_PER_MM_KEY] = stepsPerMm
-        }
-    }
-
-    suspend fun setStopHead(stopHead: String) {
-        application.applicationContext.dataStore.edit { preferences ->
-            preferences[STOP_HEAD_KEY] = stopHead
         }
     }
 
@@ -326,23 +257,75 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     fun saveSettings(key: String) {
         viewModelScope.launch {
             when (key) {
-                "Speed" -> setSpeed(speed)
-                "Accel" -> setAccel(accel)
-                "Max Delay" -> setMaxDelay(maxDelay)
-                "Min Delay" -> setMinDelay(minDelay)
+                "Speed" -> {
+                    application.applicationContext.dataStore.edit { preferences ->
+                        preferences[SPEED_KEY] = speed
+                    }
+                }
+                "Accel" -> {
+                    application.applicationContext.dataStore.edit { preferences ->
+                        preferences[ACCEL_KEY] = accel
+                    }
+                }
+                "Max Delay" -> {
+                    application.applicationContext.dataStore.edit { preferences ->
+                        preferences[MAX_DELAY_KEY] = maxDelay
+                    }
+                }
+                "Min Delay" -> {
+                    application.applicationContext.dataStore.edit { preferences ->
+                        preferences[MIN_DELAY_KEY] = minDelay
+                    }
+                }
 
-                "Step Position" -> setStepPosition(stepPosition)
-                "Min Step Position" -> setMinStepPosition(minStepPosition)
-                "Max Step Position" -> setMaxStepPosition(maxStepPosition)
+                "Step Position" -> {
+                    application.applicationContext.dataStore.edit { preferences ->
+                        preferences[STEP_POSITION_KEY] = stepPosition
+                    }
+                }
+                "Min Step Position" -> {
+                    application.applicationContext.dataStore.edit { preferences ->
+                        preferences[MIN_STEP_POSITION_KEY] = minStepPosition
+                    }
+                }
+                "Max Step Position" -> {
+                    application.applicationContext.dataStore.edit { preferences ->
+                        preferences[MAX_STEP_POSITION_KEY] = maxStepPosition
+                    }
+                }
 
-                "8ft Stop Head" -> setEightFtStopHead(eightFtStopHead)
-                "10ft Stop Head" -> setTenFtStopHead(tenFtStopHead)
-                "12ft Stop Head" -> setTwelveFtStopHead(twelveFtStopHead)
+                "8ft Stop Head" -> {
+                    application.applicationContext.dataStore.edit { preferences ->
+                        preferences[EIGHT_FT_STOP_HEAD_KEY] = eightFtStopHead
+                    }
+                }
+                "10ft Stop Head" -> {
+                    application.applicationContext.dataStore.edit { preferences ->
+                        preferences[TEN_FT_STOP_HEAD_KEY] = tenFtStopHead
+                    }
+                }
+                "12ft Stop Head" -> {
+                    application.applicationContext.dataStore.edit { preferences ->
+                        preferences[TWELVE_FT_STOP_HEAD_KEY] = twelveFtStopHead
+                    }
+                }
 
-                "Steps/Inch" -> setStepsPerInch(stepsPerInch)
-                "Steps/mm" -> setStepsPerMm(stepsPerMm)
+                "Steps/Inch" -> {
+                    application.applicationContext.dataStore.edit { preferences ->
+                        preferences[STEPS_PER_INCH_KEY] = stepsPerInch
+                    }
+                }
+                "Steps/mm" -> {
+                    application.applicationContext.dataStore.edit { preferences ->
+                        preferences[STEPS_PER_MM_KEY] = stepsPerMm
+                    }
+                }
 
-                "Stop Head" -> setStopHead(stopHead)
+                "Stop Head" -> {
+                    application.applicationContext.dataStore.edit { preferences ->
+                        preferences[STOP_HEAD_KEY] = stopHead
+                    }
+                }
             }
         }
     }
@@ -420,15 +403,24 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
             }
         }
 
+        // If moving, stop and move to new position
         if (isMoving) {
             if (!isStopping) {
                 sendData("STOP")
                 isStopping = true
             }
-            newMoveDistance = distance
+            newMovePosition = stepsFromZero
         } else {
             moveSteps(stepsToGo - getStopHeadSteps())
             clearInput()
+        }
+    }
+
+    fun goToStepPosition(steps: Int) {
+        viewModelScope.launch {
+            delay(1000)
+            var stepsToGo = steps - stepPosition
+            moveSteps(stepsToGo - getStopHeadSteps())
         }
     }
 
@@ -576,8 +568,8 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
             isMoving = false
 
             if (isStopping) {
-                goToPosition(unit, newMoveDistance)
-                newMoveDistance = 0f
+                goToStepPosition(newMovePosition)
+                newMovePosition = 0
                 isStopping = false
             }
 

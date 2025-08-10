@@ -23,7 +23,7 @@ fun dinoGame() {
     var dinoVelocity by remember { mutableStateOf(0f) }
     var isOnGround by remember { mutableStateOf(true) }
 
-    var obstacles by remember { mutableStateOf(listOf(Offset(1000f, 0f))) }
+    val obstacles = remember { mutableStateListOf(Offset(1000f, 0f)) }
     var speed by remember { mutableStateOf(8f) }
     var score by remember { mutableStateOf(0) }
     var gameOver by remember { mutableStateOf(false) }
@@ -32,11 +32,12 @@ fun dinoGame() {
     val gravity = 1.2f
     val jumpStrength = -20f
 
+    // Game loop
     LaunchedEffect(gameStarted) {
         if (gameStarted && !gameOver) {
             while (true) {
                 withFrameMillis {
-                    // Update dino position
+                    // Dino physics
                     dinoY += dinoVelocity
                     dinoVelocity += gravity
 
@@ -46,23 +47,28 @@ fun dinoGame() {
                         isOnGround = true
                     }
 
-                    // Move obstacles
-                    obstacles = obstacles.map { it.copy(x = it.x - speed) }
+                    // Move obstacles in place
+                    for (i in obstacles.indices) {
+                        obstacles[i] = obstacles[i].copy(x = obstacles[i].x - speed)
+                    }
 
-                    // Respawn obstacles
-                    if (obstacles.first().x < -50f) {
-                        obstacles = obstacles.drop(1) + Offset(1000f + (200..600).random(), 0f)
-                        score += 1
-                        speed += 0.2f // Increase speed over time
+                    // Recycle obstacles
+                    if (obstacles.isNotEmpty() && obstacles.first().x < -50f) {
+                        obstacles.removeAt(0)
+                        obstacles.add(Offset(1000f + (200..600).random(), 0f))
+                        score++
+                        speed += 0.2f
                     }
 
                     // Collision detection
-                    val dinoRect = Rect(50f, 300f + dinoY, 100f, 350f + dinoY)
+                    val groundY = 300f
+                    val dinoRect = Rect(50f, groundY + dinoY, 100f, groundY + 50f + dinoY)
                     for (obs in obstacles) {
-                        val cactusRect = Rect(obs.x, 300f, obs.x + 30f, 350f)
+                        val cactusRect = Rect(obs.x, groundY, obs.x + 30f, groundY + 50f)
                         if (dinoRect.overlaps(cactusRect)) {
                             gameOver = true
                             gameStarted = false
+                            break
                         }
                     }
                 }
@@ -70,7 +76,7 @@ fun dinoGame() {
         }
     }
 
-    // Tap controls
+    // UI
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -84,7 +90,8 @@ fun dinoGame() {
                             dinoY = 0f
                             dinoVelocity = 0f
                             isOnGround = true
-                            obstacles = listOf(Offset(1000f, 0f))
+                            obstacles.clear()
+                            obstacles.add(Offset(1000f, 0f))
                             speed = 8f
                             score = 0
                             gameOver = false
@@ -132,7 +139,7 @@ fun dinoGame() {
             )
         }
 
-        // Game canvas
+        // Canvas
         Canvas(modifier = Modifier.fillMaxSize()) {
             val groundY = size.height - 200f
 
@@ -162,4 +169,13 @@ fun dinoGame() {
         }
     }
 }
+
+
+//// Disclaimer
+//Text(
+//"Disclaimer: This game is made by ChatGPT. Not Christian",
+//fontSize = 12.sp,
+//color = Color.Gray,
+//modifier = Modifier.align(Alignment.BottomStart)
+//)
 
