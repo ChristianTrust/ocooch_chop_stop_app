@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.christian.ocoochchopstop.ui.util.ocoochCard
@@ -24,7 +25,8 @@ fun numpad(
     fontSize: Int = 24,
     useConfirmButton: Boolean = true,
     onConfirmClick: () -> Unit = {},
-    buttonColors: List<androidx.compose.ui.graphics.Color> = listOf(
+    backgroundColor: Color = MaterialTheme.colorScheme.secondaryContainer,
+    buttonColors: List<Color> = listOf(
         MaterialTheme.colorScheme.secondary,
         MaterialTheme.colorScheme.onSecondary
     )
@@ -32,7 +34,7 @@ fun numpad(
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(cornerRadius))
-            .background(MaterialTheme.colorScheme.secondaryContainer)
+            .background(backgroundColor)
             .fillMaxWidth()
             .padding(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,

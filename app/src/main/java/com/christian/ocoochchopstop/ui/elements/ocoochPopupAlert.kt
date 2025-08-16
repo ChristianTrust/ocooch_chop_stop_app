@@ -27,7 +27,8 @@ fun ocoochPopupAlert(
     message: String,
     onConfirm: (() -> Unit)? = null,
     onCancel: () -> Unit,
-    properties: PopupProperties = PopupProperties(focusable = true, dismissOnBackPress = true)
+    properties: PopupProperties = PopupProperties(focusable = true, dismissOnBackPress = true),
+    content: @Composable () -> Unit = {}
 ) {
     if (show) {
         Popup(
@@ -38,83 +39,82 @@ fun ocoochPopupAlert(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                     .clickable { onCancel() },
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
                 Column(
                     modifier = Modifier
-                        .weight(1f),
-                    verticalArrangement = Arrangement.Center,
+                        .padding(16.dp)
+                        .width(320.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainer),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Column(
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onTertiary,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Box(
                         modifier = Modifier
-                            .padding(16.dp)
-                            .width(320.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.tertiaryContainer),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Text(
-                            text = title,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
                         Text(
                             text = message,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
+                    }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        ocoochCard(
+                            icon = if (optional) Icons.Filled.Close else Icons.Filled.Check,
+                            onClick = { onCancel() },
+                            modifier = Modifier
+                                .padding(8.dp)
+                                .height(48.dp)
+                                .weight(1f),
+                            fontSize = 32,
+                            colors = listOf(
+                                MaterialTheme.colorScheme.surface,
+                                MaterialTheme.colorScheme.onSurface
+                            )
+                        )
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                        if (optional) {
+                            Spacer(modifier = Modifier.height(8.dp))
+
                             ocoochCard(
-                                icon = if (optional) Icons.Filled.Close else Icons.Filled.Check,
-                                onClick = { onCancel() },
+                                icon = Icons.Filled.Check,
+                                onClick = { onConfirm?.invoke() },
                                 modifier = Modifier
                                     .padding(8.dp)
                                     .height(48.dp)
                                     .weight(1f),
                                 fontSize = 32,
                                 colors = listOf(
-                                    MaterialTheme.colorScheme.tertiary,
+                                    MaterialTheme.colorScheme.surface,
                                     MaterialTheme.colorScheme.onSurface
                                 )
                             )
-
-                            if (optional) {
-                                Spacer(modifier = Modifier.height(8.dp))
-
-                                ocoochCard(
-                                    icon = Icons.Filled.Check,
-                                    onClick = { onConfirm?.invoke() },
-                                    modifier = Modifier
-                                        .padding(8.dp)
-                                        .height(48.dp)
-                                        .weight(1f),
-                                    fontSize = 32,
-                                    colors = listOf(
-                                        MaterialTheme.colorScheme.tertiary,
-                                        MaterialTheme.colorScheme.onSurface
-                                    )
-                                )
-                            }
                         }
                     }
                 }
-                Spacer(modifier = Modifier.weight(1f))
+
+                content()
             }
         }
     }

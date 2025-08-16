@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavHostController
+import com.christian.ocoochchopstop.ui.elements.calibrationPopup
 import com.christian.ocoochchopstop.ui.elements.distanceDisplay
 import com.christian.ocoochchopstop.ui.elements.numpad
 import com.christian.ocoochchopstop.ui.elements.terminalView
@@ -70,12 +71,11 @@ fun settingsPage(chop: ChopStopViewModel, navController: NavHostController) {
         Pair("10ft Stop Head", chop.tenFtStopHead),
         Pair("12ft Stop Head", chop.twelveFtStopHead),
 
-        Pair("Steps/Inch", chop.stepsPerInch),
-        Pair("Steps/mm", chop.stepsPerMm)
+        Pair("Steps/Inch", chop.stepsPerInch)
     )
 //    val commands = listOf("MOVE:", "SPEED:", "ACCEL:", "MAX_DELAY:", "MIN_DELAY:", "HOME", "LOG", "POS")
-    val commands = listOf("MOVE:", "STOP", "HOME", "LOG")
-    val singleCommands = listOf("STOP", "HOME", "LOG")
+    val commands = listOf("MOVE:", "X", "HOME", "LOG", "CONFIRM")
+    val singleCommands = listOf("X", "HOME", "LOG", "CONFIRM")
     val isSingleCommand = selectedOption in singleCommands
 
     fun applyAndCloseDefault(key: String) {
@@ -102,14 +102,17 @@ fun settingsPage(chop: ChopStopViewModel, navController: NavHostController) {
             "12ft Stop Head" -> chop.twelveFtStopHead = inputNumberDefault.toDouble()
 
             "Steps/Inch" -> chop.stepsPerInch = inputNumberDefault.toDouble()
-            "Steps/mm" -> chop.stepsPerMm = inputNumberDefault.toDouble()
         }
+
+        chop.logToTerminal("$key set to $inputNumberDefault", "[INFO]")
 
         defaultExpanded = false
         chop.setMegaParameters(key)
         chop.saveSettings(key)
         selectedDefault = ""
     }
+
+    calibrationPopup(chop)
 
     BoxWithConstraints(
         modifier = Modifier
@@ -280,8 +283,7 @@ fun settingsPage(chop: ChopStopViewModel, navController: NavHostController) {
                                                         "10ft Stop Head",
                                                         "12ft Stop Head",
 
-                                                        "Steps/Inch",
-                                                        "Steps/mm" -> true
+                                                        "Steps/Inch" -> true
                                                         else -> false
                                                     }
 
@@ -567,17 +569,15 @@ fun settingsPage(chop: ChopStopViewModel, navController: NavHostController) {
                                     ocoochCard(
                                         text = "Send",
                                         onClick = {
-                                            if (selectedOption == "MOVE:") {
-                                                chop.moveSteps(inputNumber.toInt())
-                                            } else if (selectedOption == "HOME") {
-                                                chop.home(false)
-                                            } else {
-                                                chop.sendData(command)
+                                            when (selectedOption) {
+                                                "MOVE:" -> chop.moveSteps(inputNumber.toInt())
+                                                "HOME" -> chop.home(false)
+                                                else -> chop.sendData(command)
                                             }
                                         },
                                         modifier = Modifier.weight(1f),
                                         fontSize = 24,
-                                        enabled = (isSingleCommand || (inputNumber.isNotBlank() && inputNumber != "-")) && !chop.isHoming
+                                        enabled = (isSingleCommand || (inputNumber.isNotBlank() && inputNumber != "-"))
                                     )
 
                                     Spacer(modifier = Modifier.padding(4.dp))

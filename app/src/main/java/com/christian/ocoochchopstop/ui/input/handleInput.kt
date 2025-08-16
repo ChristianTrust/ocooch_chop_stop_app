@@ -40,9 +40,7 @@ fun addToMain(number: String, inputNumber: String, chop: ChopStopViewModel): Str
 
     // Check and limit decimal places
     if (inputNumber.contains(".")) {
-        if (number == ".") {
-            return inputNumber
-        }
+        if (number == ".") return inputNumber
 
         val parts = inputNumber.split(".")
         var mainPart = parts[0]
@@ -56,5 +54,6 @@ fun addToMain(number: String, inputNumber: String, chop: ChopStopViewModel): Str
         }
     }
 
+    if (inputNumber == "0" && number == ".") return newInputNumber
     return if (inputNumber == "0") number else newInputNumber
 }
