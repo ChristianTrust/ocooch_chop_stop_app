@@ -4,7 +4,7 @@ import android.content.res.Configuration
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
@@ -13,14 +13,13 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavHostController
-import com.christian.ocoochchopstop.ui.elements.calibrationPopup
-import com.christian.ocoochchopstop.ui.util.columnOrRow
-import com.christian.ocoochchopstop.ui.viewmodel.ChopStopViewModel
 import com.christian.ocoochchopstop.ui.elements.distanceDisplay
 import com.christian.ocoochchopstop.ui.elements.numpad
 import com.christian.ocoochchopstop.ui.elements.ocoochPopupAlert
 import com.christian.ocoochchopstop.ui.input.addToMain
+import com.christian.ocoochchopstop.ui.util.columnOrRow
 import com.christian.ocoochchopstop.ui.util.ocoochCard
+import com.christian.ocoochchopstop.ui.viewmodel.ChopStopViewModel
 
 @Composable
 fun homePage(chop: ChopStopViewModel, navController: NavHostController) {
@@ -30,8 +29,6 @@ fun homePage(chop: ChopStopViewModel, navController: NavHostController) {
     LaunchedEffect(Unit) {
         chop.closeLengthError()
     }
-
-    calibrationPopup(chop)
 
     BoxWithConstraints(
         modifier = Modifier

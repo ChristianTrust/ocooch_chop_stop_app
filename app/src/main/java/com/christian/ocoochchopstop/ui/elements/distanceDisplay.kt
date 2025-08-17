@@ -71,6 +71,20 @@ fun distanceDisplay(
         }
     }
 
+    calibrationPopup(chop)
+
+    ocoochPopupAlert( // Home alert is shown on startup
+        show = chop.firstHoming,
+        title = "Start Homing",
+        message = "Ready to start the homing cycle?",
+        optional = true,
+        onConfirm = {
+            chop.home(false)
+            chop.firstHoming = false
+        },
+        onCancel = { chop.firstHoming = false }
+    )
+
     Column(
         modifier = Modifier.width(width)
     ) {
