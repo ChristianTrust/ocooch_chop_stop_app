@@ -90,7 +90,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     var tenFtStopHead by mutableStateOf(0.0)
     var twelveFtStopHead by mutableStateOf(0.0)
 
-    var stepsPerInch by mutableStateOf(0.0)
+    var stepsPerInch by mutableStateOf(1777.77777778)
 
     var stopHead by mutableStateOf("8ft")
 
@@ -106,6 +106,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     var isMoving by mutableStateOf(false)
     var isStopping by mutableStateOf(false)
     var isHoming by mutableStateOf(false)
+    var firstHoming by mutableStateOf(false)
     var isCalibrating by mutableStateOf(false)
     var calibrationInput by mutableStateOf("")
     var newMovePosition by mutableStateOf(0)
@@ -425,7 +426,9 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun home(ready: Boolean) {
-        if (!ready) {
+        if (ready) {
+            sendData("HOME", true)
+        } else {
             if (isHoming) {
                 isHoming = false
                 logToTerminal("Homing canceled", "[INFO]")
@@ -433,8 +436,6 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
             }
             isHoming = true
             sendData("MOVE:200", true)
-        } else {
-            sendData("HOME", true)
         }
     }
 
@@ -450,20 +451,10 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         isInvalidInput = false
     }
 
-    fun toggleInch() { // TODO: Fix this
+    fun toggleInch() {
         isInch = !isInch
         unit = if (isInch) "INCH:" else "MM:"
         unitMarker = if (isInch) "\"" else "mm"
-//        maxInputLength = if (isInch) 96.0 else 2440.0
-
-        inputNumber.toDoubleOrNull()?.let { num ->
-            var newNum = num
-
-//            while (newNum > maxInputLength) {
-//                newNum = newNum / 10
-//            }
-            inputNumber = newNum.toString()
-        }
     }
 
     fun changeStopHead(head: String = "8ft") {
@@ -603,8 +594,28 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun moveStart() {
+        moveTimer(true)
+        isMoving = true
+    }
+
+    fun moveStop() {
+        moveTimer(false)
+        isMoving = false
+
+        if (isStopping) {
+            goToStepPosition(newMovePosition)
+            newMovePosition = 0
+            isStopping = false
+        }
+
+        if (isHoming) {
+            home(true)
+        }
+    }
+
     private fun handleIncomingLine(line: String) {
-        if (line.startsWith("POS:")) {
+        if (line.startsWith("POS:") || line.startsWith("OS:")) { // somehow the P in POS gets lost occasionally
             stepPositionText.value = line
 
             val parts = line.split(":")
@@ -617,24 +628,16 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
 
             when (line) {
                 "STARTED" -> {
-                    moveTimer(true)
-                    isMoving = true
+                    moveStart()
                 }
                 "STOPPED" -> {
-                    moveTimer(false)
-                    isMoving = false
-
-                    if (isStopping) {
-                        goToStepPosition(newMovePosition)
-                        newMovePosition = 0
-                        isStopping = false
-                    }
-
-                    if (isHoming) {
-                        home(true)
-                    }
+                    moveStop()
+                }
+                "TOPPED" -> { // somehow the S in STOPPED gets lost occasionally
+                    moveStop()
                 }
                 "MEGA READY" -> {
+                    firstHoming = true
                     connectionState = 100
                     setMegaParameters("all")
                     parametersSet = true
@@ -646,9 +649,9 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                 "HOME" -> {
                     isHoming = false
                 }
-                //"ERR:INVALID" -> {
-                //    sendData(lastSentLine.value)
-                //}
+                "ERR:HOMING_ERROR" -> {
+                    home(false)
+                }
 
                 else -> {
                 }

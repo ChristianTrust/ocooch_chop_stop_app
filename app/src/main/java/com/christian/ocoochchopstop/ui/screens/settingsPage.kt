@@ -22,7 +22,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavHostController
-import com.christian.ocoochchopstop.ui.elements.calibrationPopup
 import com.christian.ocoochchopstop.ui.elements.distanceDisplay
 import com.christian.ocoochchopstop.ui.elements.numpad
 import com.christian.ocoochchopstop.ui.elements.terminalView
@@ -111,8 +110,6 @@ fun settingsPage(chop: ChopStopViewModel, navController: NavHostController) {
         chop.saveSettings(key)
         selectedDefault = ""
     }
-
-    calibrationPopup(chop)
 
     BoxWithConstraints(
         modifier = Modifier
