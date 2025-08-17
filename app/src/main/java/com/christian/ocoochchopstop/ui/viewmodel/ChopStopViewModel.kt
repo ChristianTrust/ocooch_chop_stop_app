@@ -43,7 +43,6 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         private val TWELVE_FT_STOP_HEAD_KEY = doublePreferencesKey("12ft_stop_head")
 
         private val STEPS_PER_INCH_KEY = doublePreferencesKey("steps_per_inch")
-        private val STEPS_PER_MM_KEY = doublePreferencesKey("steps_per_mm")
 
         private val STOP_HEAD_KEY = stringPreferencesKey("stop_head")
     }
@@ -74,8 +73,6 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
 
     val stepsPerInchFlow = application.applicationContext.dataStore.data
         .map { preferences -> preferences[STEPS_PER_INCH_KEY] ?: 1777.77777778 }
-    val stepsPerMmFlow = application.applicationContext.dataStore.data
-        .map { preferences -> preferences[STEPS_PER_MM_KEY] ?: 69.9912510935 }
 
     val stopHeadFlow = application.applicationContext.dataStore.data
         .map { preferences -> preferences[STOP_HEAD_KEY] ?: "8ft" }
@@ -94,11 +91,10 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     var twelveFtStopHead by mutableStateOf(0.0)
 
     var stepsPerInch by mutableStateOf(0.0)
-    var stepsPerMm by mutableStateOf(0.0)
 
     var stopHead by mutableStateOf("8ft")
 
-    var unitPosition by mutableStateOf("")
+    var inchPosition by mutableStateOf(0.0)
     var parametersSet by mutableStateOf(false)
 
     var inputNumber by mutableStateOf("")
@@ -110,14 +106,18 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     var isMoving by mutableStateOf(false)
     var isStopping by mutableStateOf(false)
     var isHoming by mutableStateOf(false)
+    var isCalibrating by mutableStateOf(false)
+    var calibrationInput by mutableStateOf("")
     var newMovePosition by mutableStateOf(0)
 
     var showLengthError by mutableStateOf(false)
     var lengthErrorTitle by mutableStateOf("")
     var lengthErrorMessage by mutableStateOf("")
+    var connectionState by mutableStateOf(0)
 
     val terminalText = mutableStateOf<List<String>>(listOf())
-    val lastReadLine = mutableStateOf("")
+    val stepPositionText = mutableStateOf("")
+    val lastSentLine = mutableStateOf("")
 
     private var moveTime = 0.0
     private var timerJob: Job? = null
@@ -130,11 +130,11 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
                 UsbManager.ACTION_USB_DEVICE_ATTACHED -> {
-                    log("USB Device Attached")
+                    logToTerminal("USB Device Attached")
                     connectToDevice() // Attempt to reconnect
                 }
                 UsbManager.ACTION_USB_DEVICE_DETACHED -> {
-                    log("USB Device Detached")
+                    logToTerminal("USB Device Detached")
                     disconnectDevice() // Handle disconnection cleanup
                 }
             }
@@ -157,7 +157,6 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch { twelveFtStopHeadFlow.collect { twelveFtStopHeadValue -> twelveFtStopHead = twelveFtStopHeadValue } }
 
         viewModelScope.launch { stepsPerInchFlow.collect { stepsPerInchValue -> stepsPerInch = stepsPerInchValue } }
-        viewModelScope.launch { stepsPerMmFlow.collect { stepsPerMmValue -> stepsPerMm = stepsPerMmValue } }
 
         viewModelScope.launch { stopHeadFlow.collect { stopHeadValue -> stopHead = stopHeadValue } }
 
@@ -172,6 +171,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
 
         unit = if (isInch) "INCH:" else "MM:"
         unitMarker = if (isInch) "\"" else "mm"
+        inchPosition = (stepPosition + getStopHeadSteps()) / stepsPerInch
 
         // Wait for parameters to be set
         viewModelScope.launch {
@@ -245,11 +245,6 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                         preferences.remove(STEPS_PER_INCH_KEY)
                     }
                 }
-                "Steps/mm" -> {
-                    application.applicationContext.dataStore.edit { preferences ->
-                        preferences.remove(STEPS_PER_MM_KEY)
-                    }
-                }
             }
         }
     }
@@ -315,11 +310,6 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                         preferences[STEPS_PER_INCH_KEY] = stepsPerInch
                     }
                 }
-                "Steps/mm" -> {
-                    application.applicationContext.dataStore.edit { preferences ->
-                        preferences[STEPS_PER_MM_KEY] = stepsPerMm
-                    }
-                }
 
                 "Stop Head" -> {
                     application.applicationContext.dataStore.edit { preferences ->
@@ -339,35 +329,45 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun moveSteps(steps: Int) {
-        var logMessage = ""
-        val inches = BigDecimal((stepPosition + getStopHeadSteps() + steps) / stepsPerInch)
+    fun lengthError(steps: Int, error: Int) {
+        val stopHeadSteps = getStopHeadSteps()
+        val inches = BigDecimal((stepPosition + stopHeadSteps + steps) / stepsPerInch)
+            .setScale(3, RoundingMode.HALF_UP)
+            .stripTrailingZeros()
+            .toPlainString()
+        val minInches = BigDecimal((stopHeadSteps + minStepPosition) / stepsPerInch)
+            .setScale(3, RoundingMode.HALF_UP)
+            .stripTrailingZeros()
+            .toPlainString()
+        val maxInches = BigDecimal((stopHeadSteps + maxStepPosition) / stepsPerInch)
             .setScale(3, RoundingMode.HALF_UP)
             .stripTrailingZeros()
             .toPlainString()
 
-        if (steps < 0) {
-            if (stepPosition + steps < minStepPosition) {
-                logMessage = "$inches\" is below the min position"
-                log(logMessage, "[ERR]")
-
+        when (error) {
+            1 -> {
+                logToTerminal("$inches\" is below the min position", "[ERR]")
                 showLengthError = true
                 lengthErrorTitle = "Too Short"
-                lengthErrorMessage = "$inches\" is below the minimum length"
-
-                return
+                lengthErrorMessage = "$inches\" is below the minimum length of $minInches\", For this stop head"
             }
-        } else {
-            if (stepPosition + steps > maxStepPosition) {
-                logMessage = "$inches\" is above the max position"
-                log(logMessage, "[ERR]")
-
+            2 -> {
+                logToTerminal("$inches\" is above the max position", "[ERR]")
                 showLengthError = true
                 lengthErrorTitle = "Too Long"
-                lengthErrorMessage = "$inches\" is above the maximum length"
-
-                return
+                lengthErrorMessage = "$inches\" is above the maximum length of $maxInches\", For this stop head"
             }
+        }
+    }
+
+    fun moveSteps(steps: Int) {
+
+        if (stepPosition + steps < minStepPosition) {
+            lengthError(steps, 1)
+            return
+        } else if (stepPosition + steps > maxStepPosition) {
+            lengthError(steps, 2)
+            return
         }
 
         //if (isMoving) {
@@ -382,21 +382,21 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun goToPosition(unitType: String = this.unit, distance: Float = this.inputNumber.toFloat()) {
-        var stepsFromZero = if (unitType == "INCH:") {
-            (distance * stepsPerInch).toInt()
+        var stepsFromZero = if (unitType == "MM:") {
+            (distance * (stepsPerInch / 25.4)).toInt()
         } else {
-            (distance * stepsPerMm).toInt()
+            (distance * stepsPerInch).toInt()
         }
         var stepsToGo = stepsFromZero - stepPosition
 
-        if (unitType == "INCH:") {
-            if ((stepsFromZero / stepsPerInch).let {
+        if (unitType == "MM:") {
+            if ((stepsFromZero / (stepsPerInch / 25.4)).let {
                     round(it * 1000) / 1000
                 } < distance) {
                 stepsToGo++
             }
         } else {
-            if ((stepsFromZero / stepsPerMm).let {
+            if ((stepsFromZero / stepsPerInch).let {
                     round(it * 1000) / 1000
                 } < distance) {
                 stepsToGo++
@@ -406,7 +406,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         // If moving, stop and move to new position
         if (isMoving) {
             if (!isStopping) {
-                sendData("STOP")
+                sendData("X") // Stop Command
                 isStopping = true
             }
             newMovePosition = stepsFromZero
@@ -418,7 +418,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
 
     fun goToStepPosition(steps: Int) {
         viewModelScope.launch {
-            delay(1000)
+            delay(100)
             var stepsToGo = steps - stepPosition
             moveSteps(stepsToGo - getStopHeadSteps())
         }
@@ -426,6 +426,11 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
 
     fun home(ready: Boolean) {
         if (!ready) {
+            if (isHoming) {
+                isHoming = false
+                logToTerminal("Homing canceled", "[INFO]")
+                return
+            }
             isHoming = true
             sendData("MOVE:200", true)
         } else {
@@ -466,11 +471,53 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         saveSettings("Stop Head")
     }
 
+    fun endCalibration() {
+        isCalibrating = false
+        calibrationInput = ""
+    }
+
+    fun getCalibrationInput(): Double {
+        return calibrationInput.toDouble() - (stepPosition / stepsPerInch)
+    }
+
+    fun recalibrate() {
+        if (calibrationInput.isEmpty()) {
+            endCalibration()
+            return
+        }
+
+        when (stopHead) {
+            "8ft" -> {
+                logToTerminal("8ft Stop Head recalibrated", "[INFO]")
+                logToTerminal("from $eightFtStopHead", "[INFO]")
+                eightFtStopHead = getCalibrationInput()
+                logToTerminal("to $eightFtStopHead", "[INFO]")
+                saveSettings("8ft Stop Head")
+            }
+            "10ft" -> {
+                logToTerminal("10ft Stop Head recalibrated", "[INFO]")
+                logToTerminal("from $tenFtStopHead", "[INFO]")
+                tenFtStopHead = getCalibrationInput()
+                logToTerminal("to $tenFtStopHead", "[INFO]")
+                saveSettings("10ft Stop Head")
+            }
+            "12ft" -> {
+                logToTerminal("12ft Stop Head recalibrated", "[INFO]")
+                logToTerminal("from $twelveFtStopHead", "[INFO]")
+                twelveFtStopHead = getCalibrationInput()
+                logToTerminal("to $twelveFtStopHead", "[INFO]")
+                saveSettings("12ft Stop Head")
+            }
+        }
+
+        endCalibration()
+    }
+
     internal fun connectToDevice() {
         viewModelScope.launch {
             val availableDrivers = UsbSerialProber.getDefaultProber().findAllDrivers(usbManager)
             if (availableDrivers.isEmpty()) {
-                log("No USB device found")
+                logToTerminal("No USB device found")
                 return@launch
             }
 
@@ -478,15 +525,15 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
             val device = driver.device
 
             val connection = usbManager.openDevice(device) ?: run {
-                log("Failed to open USB device", "[ERR]")
+                logToTerminal("Failed to open USB device", "[ERR]")
                 return@launch
             }
 
             port = driver.ports[0].apply {
                 open(connection)
                 setParameters(baudRate, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE)
-                log("Connected to ${device.deviceName}")
-                lastReadLine.value = "Loading"
+                logToTerminal("Connected to ${device.deviceName}")
+                connectionState = 1
             }
 
             readData()
@@ -498,13 +545,13 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
             try {
                 port?.close()
                 port = null
-                log("USB device disconnected and port closed")
+                logToTerminal("USB device disconnected and port closed")
+                connectionState = 0
             } catch (e: Exception) {
-                log("Error during port disconnection: ${e.message}", "[ERR]")
+                logToTerminal("Error during port disconnection: ${e.message}", "[ERR]")
             }
         }
     }
-
 
     private fun readData() {
         viewModelScope.launch(Dispatchers.IO) {
@@ -531,71 +578,97 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                                 }
                             }
                         }
+                    } else if (len < 0) {
+                        // Handle end of stream (e.g., port closed)
+                        withContext(Dispatchers.Main) {
+                            logToTerminal("Port closed or end of stream reached", "[INFO]")
+                        }
+                        break // Exit loop if port is closed
                     }
                 } catch (e: Exception) {
                     withContext(Dispatchers.Main) {
-                        log("Read error: ${e.message}", "[ERR]")
+                        logToTerminal("Read error: ${e.message}", "[ERR]")
                     }
-                    break
+                    // Delay before retrying to avoid tight loop on persistent errors
+                    delay(100) // Wait 1 second before retrying
+                    continue // Continue the loop instead of breaking
                 }
             }
             // If there's remaining data in the buffer when the port closes, process it
             if (lineBuffer.isNotEmpty()) {
                 withContext(Dispatchers.Main) {
-                    log(lineBuffer.toString())
+                    logToTerminal(lineBuffer.toString())
                 }
             }
         }
     }
 
     private fun handleIncomingLine(line: String) {
-        log(line, "")
-        lastReadLine.value = line
-
         if (line.startsWith("POS:")) {
+            stepPositionText.value = line
+
             val parts = line.split(":")
             if (parts.size == 2) {
                 stepPosition = parts[1].toInt()
                 saveSettings("Step Position")
             }
-        }
-        else if (line == "STARTED") {
-            moveTimer(true)
-            isMoving = true
-        }
-        else if (line == "STOPPED") {
-            moveTimer(false)
-            isMoving = false
+        } else {
+            logToTerminal(line, "")
 
-            if (isStopping) {
-                goToStepPosition(newMovePosition)
-                newMovePosition = 0
-                isStopping = false
-            }
+            when (line) {
+                "STARTED" -> {
+                    moveTimer(true)
+                    isMoving = true
+                }
+                "STOPPED" -> {
+                    moveTimer(false)
+                    isMoving = false
 
-            if (isHoming) {
-                home(true)
+                    if (isStopping) {
+                        goToStepPosition(newMovePosition)
+                        newMovePosition = 0
+                        isStopping = false
+                    }
+
+                    if (isHoming) {
+                        home(true)
+                    }
+                }
+                "MEGA READY" -> {
+                    connectionState = 100
+                    setMegaParameters("all")
+                    parametersSet = true
+                    viewModelScope.launch {
+                        delay(1000)
+                        sendData("LOG")
+                    }
+                }
+                "HOME" -> {
+                    isHoming = false
+                }
+                //"ERR:INVALID" -> {
+                //    sendData(lastSentLine.value)
+                //}
+
+                else -> {
+                }
             }
-        }
-        else if (line == "MEGA READY") {
-            setMegaParameters("all")
-            parametersSet = true
-            viewModelScope.launch {
-                delay(1000)
-                sendData("LOG")
-            }
-        } else if (line == "HOME") {
-            isHoming = false
         }
     }
 
     fun setMegaParameters(param: String) {
         if (param == "all") {
-            sendData("SPEED:$speed")
-            sendData("ACCEL:$accel")
-            sendData("MAX_DELAY:$maxDelay")
-            sendData("MIN_DELAY:$minDelay")
-            sendData("POS:$stepPosition")
+            viewModelScope.launch {
+                sendData("SPEED:$speed")
+                delay(100)
+                sendData("ACCEL:$accel")
+                delay(100)
+                sendData("MAX_DELAY:$maxDelay")
+                delay(100)
+                sendData("MIN_DELAY:$minDelay")
+                delay(100)
+                sendData("POS:$stepPosition")
+            }
         } else {
             when (param) {
                 "Speed" -> sendData("SPEED:$speed")
@@ -619,7 +692,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         } else {
             // Stop the coroutine
             timerJob?.cancel()
-            log("%.2f sec".format(moveTime), "[TIME]")
+            logToTerminal("%.2f sec".format(moveTime), "[TIME]")
             moveTime = 0.0
         }
     }
@@ -629,38 +702,42 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 if (isHoming && !force) {
-                    log("Homing in progress", "[ERR]")
+                    logToTerminal("Homing in progress", "[ERR]")
                     return@launch
                 }
                 val data = (text + "\n").toByteArray()
                 port?.write(data, 1000)
                 withContext(Dispatchers.Main) {
-                    log(text, "[Sent]")
+                    logToTerminal(text, "[Sent]")
+                    lastSentLine.value = text
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    log("Send error: ${e.message}", "[ERR]")
+                    logToTerminal("Send error: ${e.message}", "[ERR]")
                 }
             }
         }
     }
 
-    fun getDisplayPosition(): String {
-        if (lastReadLine.value.isEmpty()) {
-            return "STATE: Disconnected"
-        } else if (lastReadLine.value == "Loading") {
-            return "STATE: Loading..."
-        }
-
-        unitPosition = (if (unit == "INCH:") {
-            "%.3f".format((stepPosition + getStopHeadSteps()) / stepsPerInch)
-        } else "%.1f".format((stepPosition + getStopHeadSteps()) / stepsPerMm))
-
-        return unitPosition
+    fun inchToMm(inches: Double): Double {
+        return inches * 25.4
     }
 
-    fun log(text: String, type: String = "[LOG]") {
-        terminalText.value = (terminalText.value + "$type $text\n").takeLast(1000)
+    fun getDisplayPosition(): String {
+        if (connectionState == 0) return "STATE: Disconnected"
+        if (connectionState == 1) return "STATE: Loading..."
+        if (isHoming) return "STATE: Homing..."
+
+        inchPosition = (stepPosition + getStopHeadSteps()) / stepsPerInch
+        return if (unit == "MM:") {
+            "%.1f".format(inchToMm(inchPosition))
+        } else {
+            "%.3f".format(inchPosition)
+        }
+    }
+
+    fun logToTerminal(text: String, type: String = "[LOG]") {
+        terminalText.value = (terminalText.value + "$type $text\n").takeLast(500)
     }
 
     fun clearTerminal() {

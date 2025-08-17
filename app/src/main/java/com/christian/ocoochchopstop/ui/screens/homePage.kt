@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavHostController
+import com.christian.ocoochchopstop.ui.elements.calibrationPopup
 import com.christian.ocoochchopstop.ui.util.columnOrRow
 import com.christian.ocoochchopstop.ui.viewmodel.ChopStopViewModel
 import com.christian.ocoochchopstop.ui.elements.distanceDisplay
@@ -29,6 +30,8 @@ fun homePage(chop: ChopStopViewModel, navController: NavHostController) {
     LaunchedEffect(Unit) {
         chop.closeLengthError()
     }
+
+    calibrationPopup(chop)
 
     BoxWithConstraints(
         modifier = Modifier
@@ -110,7 +113,11 @@ fun homePage(chop: ChopStopViewModel, navController: NavHostController) {
                 ) {
                     numpad(
                         onClick = {
-                            chop.inputNumber = addToMain(it, chop.inputNumber, chop)
+//                            if (chop.isCalibrating) {
+//                                chop.calibrationInput = addToMain(it, chop.calibrationInput, chop)
+//                            } else {
+                                chop.inputNumber = addToMain(it, chop.inputNumber, chop)
+                            //}
                         },
                         modifier = Modifier.padding(top = 8.dp),
                         isDecimalEnabled = true,
