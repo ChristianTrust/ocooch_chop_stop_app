@@ -72,7 +72,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         .map { preferences -> preferences[TWELVE_FT_STOP_HEAD_KEY] ?: 50.6 }
 
     val stepsPerInchFlow = application.applicationContext.dataStore.data
-        .map { preferences -> preferences[STEPS_PER_INCH_KEY] ?: 1777.77777778 }
+        .map { preferences -> preferences[STEPS_PER_INCH_KEY] ?: 1775.36 }
 
     val stopHeadFlow = application.applicationContext.dataStore.data
         .map { preferences -> preferences[STOP_HEAD_KEY] ?: "8ft" }
@@ -90,7 +90,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     var tenFtStopHead by mutableStateOf(0.0)
     var twelveFtStopHead by mutableStateOf(0.0)
 
-    var stepsPerInch by mutableStateOf(1777.77777778)
+    var stepsPerInch by mutableStateOf(1775.36)
 
     var stopHead by mutableStateOf("8ft")
 
@@ -371,15 +371,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
             return
         }
 
-        //if (isMoving) {
-        //    if (!isStopping) {
-        //        sendData("STOP")
-        //        isStopping = true
-        //    }
-        //    newMovePosition = steps
-        //} else {
-            sendData("MOVE:$steps")
-        //}
+        sendData("MOVE:$steps")
     }
 
     fun goToPosition(unitType: String = this.unit, distance: Float = this.inputNumber.toFloat()) {
@@ -406,11 +398,14 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
 
         // If moving, stop and move to new position
         if (isMoving) {
+            newMovePosition = stepsFromZero
+
             if (!isStopping) {
                 sendData("X") // Stop Command
                 isStopping = true
+            } else {
+                sendData("CHECK")
             }
-            newMovePosition = stepsFromZero
         } else {
             moveSteps(stepsToGo - getStopHeadSteps())
             clearInput()
@@ -615,7 +610,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     }
 
     private fun handleIncomingLine(line: String) {
-        if (line.startsWith("POS:") || line.startsWith("OS:")) { // somehow the P in POS gets lost occasionally
+        if (line.startsWith("POS:") || line.startsWith("OS:")) { // sometimes the P in POS gets lost
             stepPositionText.value = line
 
             val parts = line.split(":")
@@ -633,7 +628,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                 "STOPPED" -> {
                     moveStop()
                 }
-                "TOPPED" -> { // somehow the S in STOPPED gets lost occasionally
+                "TOPPED" -> { // sometimes the S in STOPPED gets lost
                     moveStop()
                 }
                 "MEGA READY" -> {
@@ -652,7 +647,6 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                 "ERR:HOMING_ERROR" -> {
                     home(false)
                 }
-
                 else -> {
                 }
             }
@@ -722,10 +716,6 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun inchToMm(inches: Double): Double {
-        return inches * 25.4
-    }
-
     fun getDisplayPosition(): String {
         if (connectionState == 0) return "STATE: Disconnected"
         if (connectionState == 1) return "STATE: Loading..."
@@ -733,7 +723,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
 
         inchPosition = (stepPosition + getStopHeadSteps()) / stepsPerInch
         return if (unit == "MM:") {
-            "%.1f".format(inchToMm(inchPosition))
+            "%.1f".format(inchPosition * 25.4)
         } else {
             "%.3f".format(inchPosition)
         }
