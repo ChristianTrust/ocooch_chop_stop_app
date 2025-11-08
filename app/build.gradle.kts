@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.christian.ocoochchopstop"
+    namespace = "com.christian.ocoochchopstopmk2"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.christian.ocoochchopstop"
+        applicationId = "com.christian.ocoochchopstopmk2"
         minSdk = 30
         //noinspection EditedTargetSdkVersion
         targetSdk = 35
@@ -50,13 +50,14 @@ dependencies {
     implementation("androidx.compose.material3:material3:1.3.2")
     implementation("androidx.navigation:navigation-compose:2.9.3")
     implementation("androidx.datastore:datastore-preferences:1.1.7")
-    implementation("com.github.mik3y:usb-serial-for-android:3.9.0") // Added for USB serial communication
-    testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.3.0")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
-    androidTestImplementation(platform("androidx.compose:compose-bom:2025.07.00"))
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-    debugImplementation("androidx.compose.ui:ui-tooling")
-    debugImplementation("androidx.compose.ui:ui-test-manifest")
-    testImplementation(kotlin("test"))
+    implementation("com.github.mik3y:usb-serial-for-android:3.9.0")
+    implementation("androidx.compose.foundation:foundation-layout:1.9.4") // Added for USB serial communication
+//    testImplementation("junit:junit:4.13.2")
+//    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+//    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
+//    androidTestImplementation(platform("androidx.compose:compose-bom:2025.07.00"))
+//    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+//    debugImplementation("androidx.compose.ui:ui-tooling")
+//    debugImplementation("androidx.compose.ui:ui-test-manifest")
+//    testImplementation(kotlin("test"))
 }

@@ -1,4 +1,4 @@
-package com.christian.ocoochchopstop.ui.theme
+package com.christian.ocoochchopstopmk2.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
