@@ -20,5 +20,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Ocooch Chop Stop"
+rootProject.name = "Ocooch Chop Stop Mk2"
 include(":app")

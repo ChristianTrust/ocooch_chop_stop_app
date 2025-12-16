@@ -17,7 +17,7 @@
         <activity
                 android:name=".ui.MainActivity"
                 android:exported="true"
-                android:label="Chop Stop"
+                android:label="Chop Stop 2"
                 android:theme="@style/Theme.OcoochChopStop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
