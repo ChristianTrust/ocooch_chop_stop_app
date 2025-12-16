@@ -63,6 +63,10 @@ fun distanceDisplay(
             "Disconnected"
         }
 
+        ChopStopViewModel.ConnectionState.NO_PERMISSION -> {
+            "Loading..."
+        }
+
         ChopStopViewModel.ConnectionState.CONNECTING -> {
             "Loading..."
         }

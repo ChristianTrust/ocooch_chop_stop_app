@@ -146,6 +146,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
 
     enum class ConnectionState {
         DISCONNECTED,
+        NO_PERMISSION,
         CONNECTING,
         CONNECTED,
         ERROR
@@ -622,6 +623,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                     )
                 }
                 usbManager.requestPermission(device, pendingIntent)
+                _connectionState.value = ConnectionState.NO_PERMISSION
                 return@launch
             }
 
