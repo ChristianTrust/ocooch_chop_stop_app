@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavHostController
 import com.christian.ocoochchopstopmk2.R.drawable.power_16
-import com.christian.ocoochchopstopmk2.ui.elements.DistanceDisplay
+import com.christian.ocoochchopstopmk2.ui.elements.distanceDisplay
 import com.christian.ocoochchopstopmk2.ui.elements.numpad
 import com.christian.ocoochchopstopmk2.ui.elements.terminalView
 import com.christian.ocoochchopstopmk2.ui.input.addToDefault
@@ -148,7 +148,7 @@ fun settingsPage(chop: ChopStopViewModel, navController: NavHostController) {
                     )
                 }
 
-                DistanceDisplay(modifier = Modifier, chop, navController, distanceDisplayWidth)
+                distanceDisplay(modifier = Modifier, chop, navController, distanceDisplayWidth)
             }
 
             Spacer(modifier = Modifier.height(8.dp))

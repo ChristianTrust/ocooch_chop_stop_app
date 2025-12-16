@@ -33,7 +33,7 @@ import com.christian.ocoochchopstopmk2.ui.viewmodel.ChopStopViewModel
 import kotlinx.coroutines.delay
 
 @Composable
-fun DistanceDisplay(
+fun distanceDisplay(
     modifier: Modifier = Modifier,
     chop: ChopStopViewModel,
     navController: NavHostController,

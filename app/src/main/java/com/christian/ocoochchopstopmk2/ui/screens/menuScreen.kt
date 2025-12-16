@@ -52,7 +52,7 @@ fun menuScreen(chop: ChopStopViewModel) {
                     startDestination = "home",
                     modifier = Modifier.padding(8.dp)
                 ) {
-                    composable("home") { HomePage(chop, navController) }
+                    composable("home") { homePage(chop, navController) }
                     composable("settings") { settingsPage(chop, navController) }
                     composable("dino_game") { dinoGame() }
                 }
