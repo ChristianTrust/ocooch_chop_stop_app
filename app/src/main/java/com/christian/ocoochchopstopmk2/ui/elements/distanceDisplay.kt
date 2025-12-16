@@ -1,4 +1,4 @@
-package com.christian.ocoochchopstop.ui.elements
+package com.christian.ocoochchopstopmk2.ui.elements
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -11,6 +11,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,19 +28,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavHostController
-import com.christian.ocoochchopstop.ui.util.ocoochCard
-import com.christian.ocoochchopstop.ui.viewmodel.ChopStopViewModel
+import com.christian.ocoochchopstopmk2.ui.util.ocoochCard
+import com.christian.ocoochchopstopmk2.ui.viewmodel.ChopStopViewModel
 import kotlinx.coroutines.delay
 
 @Composable
-fun distanceDisplay(
+fun DistanceDisplay(
+    modifier: Modifier = Modifier,
     chop: ChopStopViewModel,
     navController: NavHostController,
     width: Dp,
-    distance: String = chop.getDisplayPosition(),
-    modifier: Modifier = Modifier
+    distance: String = chop.getDisplayPosition()
 ) {
-    val displayDistance: String
+    val conState by chop.connectionState.collectAsState()
     val fontSize: TextUnit
     val unitMarkerColor: Color
     var expanded by remember { mutableStateOf(false) }
@@ -53,15 +54,41 @@ fun distanceDisplay(
         MaterialTheme.colorScheme.primaryContainer
     } else MaterialTheme.colorScheme.tertiary
 
-    if (distance.startsWith("STATE:")) {
-        displayDistance = distance.substringAfter(":")
-        fontSize = 22.sp
-        unitMarkerColor = Color.Transparent
-    } else {
-        displayDistance = distance
+    val displayDistance: String = when (conState) {
+        ChopStopViewModel.ConnectionState.CONNECTED -> {
+            distance
+        }
+
+        ChopStopViewModel.ConnectionState.DISCONNECTED -> {
+            "Disconnected"
+        }
+
+        ChopStopViewModel.ConnectionState.CONNECTING -> {
+            "Loading..."
+        }
+
+        ChopStopViewModel.ConnectionState.ERROR -> {
+            "Error"
+        }
+    }
+
+    if (conState == ChopStopViewModel.ConnectionState.CONNECTED) {
         fontSize = 32.sp
         unitMarkerColor = MaterialTheme.colorScheme.onSurface
+    } else {
+        fontSize = 22.sp
+        unitMarkerColor = Color.Transparent
     }
+
+//    if (distance.startsWith("STATE:")) {
+//        displayDistance = distance.substringAfter(":")
+//        fontSize = 22.sp
+//        unitMarkerColor = Color.Transparent
+//    } else {
+//        displayDistance = distance
+//        fontSize = 32.sp
+//        unitMarkerColor = MaterialTheme.colorScheme.onSurface
+//    }
 
     if (chop.isInvalidInput) {
         LaunchedEffect(chop.isInvalidInput) {
@@ -73,20 +100,8 @@ fun distanceDisplay(
 
     calibrationPopup(chop)
 
-    ocoochPopupAlert( // Home alert is shown on startup
-        show = chop.firstHoming,
-        title = "Start Homing",
-        message = "Ready to start the homing cycle?",
-        optional = true,
-        onConfirm = {
-            chop.home(false)
-            chop.firstHoming = false
-        },
-        onCancel = { chop.firstHoming = false }
-    )
-
     Column(
-        modifier = Modifier.width(width)
+        modifier = Modifier.width(width).zIndex(100f)
     ) {
         Row(
             modifier = modifier
@@ -97,9 +112,9 @@ fun distanceDisplay(
                 .background(backgroundColor)
                 .zIndex(100f)
                 .clickable {
-                    @Suppress("KotlinConstantConditions") // Testing
-                    if (distance == "STATE: Disconnected" && false) {
-                        navController.navigate("dino_game")
+                    if (conState != ChopStopViewModel.ConnectionState.CONNECTED) {
+//                        navController.navigate("dino_game")
+                        chop.connectToDevice()
                     } else {
                         expanded = true
                     }

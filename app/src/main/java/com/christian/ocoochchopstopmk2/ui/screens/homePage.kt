@@ -1,33 +1,55 @@
-package com.christian.ocoochchopstop.ui.screens
+package com.christian.ocoochchopstopmk2.ui.screens
 
 import android.content.res.Configuration
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeContent
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavHostController
-import com.christian.ocoochchopstop.ui.elements.distanceDisplay
-import com.christian.ocoochchopstop.ui.elements.numpad
-import com.christian.ocoochchopstop.ui.elements.ocoochPopupAlert
-import com.christian.ocoochchopstop.ui.input.addToMain
-import com.christian.ocoochchopstop.ui.util.columnOrRow
-import com.christian.ocoochchopstop.ui.util.ocoochCard
-import com.christian.ocoochchopstop.ui.viewmodel.ChopStopViewModel
+import com.christian.ocoochchopstopmk2.R.drawable.power_16
+import com.christian.ocoochchopstopmk2.ui.elements.DistanceDisplay
+import com.christian.ocoochchopstopmk2.ui.elements.numpad
+import com.christian.ocoochchopstopmk2.ui.elements.ocoochPopupAlert
+import com.christian.ocoochchopstopmk2.ui.input.addToMain
+import com.christian.ocoochchopstopmk2.ui.util.columnOrRow
+import com.christian.ocoochchopstopmk2.ui.util.ocoochCard
+import com.christian.ocoochchopstopmk2.ui.viewmodel.ChopStopViewModel
 
 @Composable
-fun homePage(chop: ChopStopViewModel, navController: NavHostController) {
+fun HomePage(chop: ChopStopViewModel, navController: NavHostController) {
     val isPortrait = LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT
     val padding = 8.dp
 
     LaunchedEffect(Unit) {
-        chop.closeLengthError()
+        chop.closeError()
     }
 
     BoxWithConstraints(
@@ -36,7 +58,7 @@ fun homePage(chop: ChopStopViewModel, navController: NavHostController) {
             .background(MaterialTheme.colorScheme.background)
             .padding(bottom = padding)
             .windowInsetsPadding(WindowInsets.safeContent),
-        contentAlignment = if (isPortrait) Alignment.BottomCenter else Alignment.BottomEnd
+        contentAlignment = if (isPortrait) Alignment.BottomCenter else Alignment.BottomEnd,
     ) {
         val buttonBoxWidth = if (isPortrait) maxWidth else maxWidth / 2
         val buttonBoxHeight = if (isPortrait) maxHeight / 2 else maxHeight
@@ -45,10 +67,10 @@ fun homePage(chop: ChopStopViewModel, navController: NavHostController) {
         columnOrRow(useColumn = isPortrait, modifier = Modifier.fillMaxSize(), content = {
 
             ocoochPopupAlert(
-                show = chop.showLengthError,
-                title = chop.lengthErrorTitle,
-                message = chop.lengthErrorMessage,
-                onCancel = { chop.closeLengthError() }
+                show = chop.showError,
+                title = chop.errorTitle,
+                message = chop.errorMessage,
+                onCancel = { chop.closeError() }
             )
 
             Column(
@@ -63,11 +85,29 @@ fun homePage(chop: ChopStopViewModel, navController: NavHostController) {
                         .fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
-                    val distance = if (chop.inputNumber.isEmpty()) {
-                        chop.getDisplayPosition()
-                    } else chop.inputNumber
+                    Row(
+                        modifier = Modifier
+                            .width(232.dp)
+                            .height(40.dp),
+                        horizontalArrangement = Arrangement.Start,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val powerColor = if (chop.isMotorPowered) Color.Green else Color.Red
 
-                    distanceDisplay(chop, navController, 160.dp, distance)
+                        Icon(
+                            painter = painterResource(id = power_16),
+                            contentDescription = "Power",
+                            tint = powerColor,
+                            modifier = Modifier
+                                .size(24.dp)
+                        )
+                    }
+
+                    val distance = chop.inputNumber.ifEmpty {
+                        chop.getDisplayPosition()
+                    }
+
+                    DistanceDisplay(modifier = Modifier, chop, navController, 160.dp, distance)
 
                     Column {
                         val showGoButton = (chop.inputNumber.isNotEmpty())
@@ -77,7 +117,7 @@ fun homePage(chop: ChopStopViewModel, navController: NavHostController) {
                             visible = showGoButton,
                             enter = slideInHorizontally(initialOffsetX = { -slideStart }) + fadeIn(),
                             exit = slideOutHorizontally(targetOffsetX = { -slideStart }) + fadeOut(),
-                            modifier = Modifier.zIndex(0f) // Ensure button is below other elements
+                            modifier = Modifier.zIndex(0f) // Ensure the button is below other elements
                         ) {
                             Row(
                                 modifier = Modifier
@@ -110,11 +150,7 @@ fun homePage(chop: ChopStopViewModel, navController: NavHostController) {
                 ) {
                     numpad(
                         onClick = {
-//                            if (chop.isCalibrating) {
-//                                chop.calibrationInput = addToMain(it, chop.calibrationInput, chop)
-//                            } else {
-                                chop.inputNumber = addToMain(it, chop.inputNumber, chop)
-                            //}
+                            chop.inputNumber = addToMain(it, chop.inputNumber, chop)
                         },
                         modifier = Modifier.padding(top = 8.dp),
                         isDecimalEnabled = true,
