@@ -63,10 +63,6 @@ fun distanceDisplay(
             "Disconnected"
         }
 
-        ChopStopViewModel.ConnectionState.NO_PERMISSION -> {
-            "Loading..."
-        }
-
         ChopStopViewModel.ConnectionState.CONNECTING -> {
             "Loading..."
         }
@@ -83,16 +79,6 @@ fun distanceDisplay(
         fontSize = 22.sp
         unitMarkerColor = Color.Transparent
     }
-
-//    if (distance.startsWith("STATE:")) {
-//        displayDistance = distance.substringAfter(":")
-//        fontSize = 22.sp
-//        unitMarkerColor = Color.Transparent
-//    } else {
-//        displayDistance = distance
-//        fontSize = 32.sp
-//        unitMarkerColor = MaterialTheme.colorScheme.onSurface
-//    }
 
     if (chop.isInvalidInput) {
         LaunchedEffect(chop.isInvalidInput) {

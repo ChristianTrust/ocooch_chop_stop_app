@@ -55,7 +55,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         private val STOP_HEAD_KEY = stringPreferencesKey("stop_head")
 
 
-        const val INTENT_ACTION_GRANT_USB = "com.christian.GRANT_USB"
+        private const val INTENT_ACTION_GRANT_USB = "com.christian.GRANT_USB"
     }
 
     // Flow variables
@@ -146,7 +146,6 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
 
     enum class ConnectionState {
         DISCONNECTED,
-        NO_PERMISSION,
         CONNECTING,
         CONNECTED,
         ERROR
@@ -556,16 +555,28 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     // USB ////////////////////////////////////////////////////////////////////////////////////////////////////// USB //
 
     private fun setupUsbPermissionReceiver() {
+        logToTerminal("USB permission receiver setup")
+
+        // Unregister any existing receiver first
+        usbPermissionReceiver?.let {
+            try {
+                application.unregisterReceiver(it)
+            } catch (_: IllegalArgumentException) {
+                // Receiver wasn't registered, ignore
+            }
+        }
+
         usbPermissionReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
                 if (INTENT_ACTION_GRANT_USB == intent.action) {
-                    val granted = intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)
+                    val granted = intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, true)
                     if (granted) {
                         logToTerminal("USB permission granted")
                         connectToDevice()
                     } else {
                         logToTerminal("USB permission denied", "[ERR]")
                         _connectionState.value = ConnectionState.ERROR
+                        connectToDevice()
                     }
                 }
             }
@@ -573,7 +584,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
 
         val filter = IntentFilter(INTENT_ACTION_GRANT_USB)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            application.registerReceiver(usbPermissionReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+            application.registerReceiver(usbPermissionReceiver, filter, Context.RECEIVER_EXPORTED )
         } else {
             @Suppress("UnspecifiedRegisterReceiverFlag")
             application.registerReceiver(usbPermissionReceiver, filter)
@@ -623,7 +634,6 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                     )
                 }
                 usbManager.requestPermission(device, pendingIntent)
-                _connectionState.value = ConnectionState.NO_PERMISSION
                 return@launch
             }
 
@@ -746,6 +756,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                 port?.apply {
                     close()
                     logToTerminal("USB device disconnected and port closed")
+                    _connectionState.value = ConnectionState.DISCONNECTED
                 }
             } catch (e: Exception) {
                 logToTerminal("Error during port disconnection: ${e.message}", "[ERR]")
@@ -888,11 +899,6 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun getDisplayPosition(): String {
-        if (connectionState.value == ConnectionState.DISCONNECTED) return "STATE: Disconnected"
-        if (connectionState.value == ConnectionState.CONNECTING) return "STATE: Loading..."
-        if (connectionState.value == ConnectionState.ERROR) return "STATE: Error"
-        if (isHoming) return "STATE: Homing..."
-
         inchPosition = (stepPosition + getStopHeadSteps()) / stepsPerInch
         return if (unit == "MM:") {
             "%.1f".format(inchPosition * 25.4)
@@ -913,6 +919,13 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
 
     override fun onCleared() {
         super.onCleared()
+        usbPermissionReceiver?.let {
+            try {
+                application.unregisterReceiver(it)
+            } catch (_: IllegalArgumentException) {
+                // Already unregistered
+            }
+        }
         getApplication<Application>().unregisterReceiver(usbBroadcastReceiver)
         disconnectDevice()
     }

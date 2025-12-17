@@ -73,15 +73,6 @@ fun homePage(chop: ChopStopViewModel, navController: NavHostController) {
                 onCancel = { chop.closeError() }
             )
 
-            if (chop.connectionState.value == ChopStopViewModel.ConnectionState.NO_PERMISSION) {
-                ocoochPopupAlert(
-                    show = true,
-                    title = "USB Permission",
-                    message = "Please grant USB permission to use the chop stop",
-                    onCancel = { chop.connectToDevice() }
-                )
-            }
-
             Column(
                 modifier = Modifier
                     .width(buttonBoxWidth)
