@@ -756,13 +756,12 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                 port?.apply {
                     close()
                     logToTerminal("USB device disconnected and port closed")
-                    _connectionState.value = ConnectionState.DISCONNECTED
                 }
             } catch (e: Exception) {
                 logToTerminal("Error during port disconnection: ${e.message}", "[ERR]")
             } finally {
                 port = null
-                _connectionState.value = ConnectionState.ERROR
+                _connectionState.value = ConnectionState.DISCONNECTED
             }
         }
     }
