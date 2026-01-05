@@ -23,19 +23,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.zIndex
-import androidx.navigation.NavHostController
 import com.christian.ocoochchopstopmk2.R.drawable.power_16
 import com.christian.ocoochchopstopmk2.ui.elements.distanceDisplay
 import com.christian.ocoochchopstopmk2.ui.elements.numpad
 import com.christian.ocoochchopstopmk2.ui.elements.terminalView
-import com.christian.ocoochchopstopmk2.ui.input.addToDefault
+import com.christian.ocoochchopstopmk2.ui.input.addToDefaultInputNumber
 import com.christian.ocoochchopstopmk2.ui.util.columnOrRow
 import com.christian.ocoochchopstopmk2.ui.util.dropDownIcons
 import com.christian.ocoochchopstopmk2.ui.util.ocoochCard
 import com.christian.ocoochchopstopmk2.ui.viewmodel.ChopStopViewModel
 
 @Composable
-fun settingsPage(chop: ChopStopViewModel, navController: NavHostController) {
+fun settingsPage(
+    chop: ChopStopViewModel,
+//    navController: NavHostController
+) {
     val isPortrait = LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT
     val distanceDisplayWidth = if (isPortrait) 232.dp else 464.dp
     val numpadWeight = if (isPortrait) 1f else 2f
@@ -148,7 +150,7 @@ fun settingsPage(chop: ChopStopViewModel, navController: NavHostController) {
                     )
                 }
 
-                distanceDisplay(modifier = Modifier, chop, navController, distanceDisplayWidth)
+                distanceDisplay(modifier = Modifier, chop, distanceDisplayWidth)
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -177,7 +179,7 @@ fun settingsPage(chop: ChopStopViewModel, navController: NavHostController) {
                             if (selectedMoveInput) {
                                 numpad(
                                     onClick = {
-                                        inputNumber = addToDefault(it, inputNumber, false)
+                                        inputNumber = addToDefaultInputNumber(it, inputNumber, false)
                                     },
                                     onConfirmClick = {
                                         selectedMoveInput = false
@@ -189,7 +191,7 @@ fun settingsPage(chop: ChopStopViewModel, navController: NavHostController) {
                             } else {
                                 numpad(
                                     onClick = {
-                                        inputNumberDefault = addToDefault(it, inputNumberDefault, isDefaultDouble)
+                                        inputNumberDefault = addToDefaultInputNumber(it, inputNumberDefault, isDefaultDouble)
                                     },
                                     onConfirmClick = { applyAndCloseDefault(selectedDefault) },
                                     isDecimalEnabled = isDefaultDouble,

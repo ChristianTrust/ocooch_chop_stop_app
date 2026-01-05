@@ -200,7 +200,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         inchPosition = (stepPosition + getStopHeadSteps()) / stepsPerInch
 
         // Wait for parameters to be set
-        confirmConnection(10)
+        confirmConnection(2)
     }
 
     fun confirmConnection(tries: Int) {
@@ -807,6 +807,16 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun chopStopReady() {
+        _connectionState.update { ConnectionState.CONNECTED }
+        setMegaParameters("all")
+        parametersSet = true
+        viewModelScope.launch {
+            delay(1000)
+            sendData("LOG")
+        }
+    }
+
     private fun handleIncomingLine(line: String) {
         if (line.startsWith("POS:") || line.startsWith("OS:")) { // sometimes the P in POS gets lost
             stepPositionText.value = line
@@ -843,23 +853,11 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                     errorTitle = "No Power"
                     errorMessage = "The motor is not powered, Please turn it on"
                 }
-                "MEGA_READY" -> {
-                    _connectionState.update { ConnectionState.CONNECTED }
-                    setMegaParameters("all")
-                    parametersSet = true
-                    viewModelScope.launch {
-                        delay(1000)
-                        sendData("LOG")
-                    }
+                "CHOP_STOP_MK1" -> {
+                    chopStopReady()
                 }
                 "CHOP_STOP_MK2" -> {
-                    _connectionState.update { ConnectionState.CONNECTED }
-                    setMegaParameters("all")
-                    parametersSet = true
-                    viewModelScope.launch {
-                        delay(1000)
-                        sendData("LOG")
-                    }
+                    chopStopReady()
                 }
                 "HOME" -> {
                     isHoming = false

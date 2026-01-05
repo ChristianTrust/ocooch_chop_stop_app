@@ -9,7 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.christian.ocoochchopstopmk2.ui.input.addToMain
+import com.christian.ocoochchopstopmk2.ui.input.addToMainInputNumber
 import com.christian.ocoochchopstopmk2.ui.viewmodel.ChopStopViewModel
 
 @Composable
@@ -37,7 +37,7 @@ fun calibrationPopup(
             ) {
                 numpad(
                     onClick = {
-                        chop.calibrationInput = addToMain(it, chop.calibrationInput, chop)
+                        chop.calibrationInput = addToMainInputNumber(it, chop.calibrationInput, chop)
                     },
                     modifier = Modifier.padding(top = 8.dp),
                     isDecimalEnabled = true,

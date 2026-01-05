@@ -33,18 +33,20 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import androidx.navigation.NavHostController
 import com.christian.ocoochchopstopmk2.R.drawable.power_16
 import com.christian.ocoochchopstopmk2.ui.elements.distanceDisplay
 import com.christian.ocoochchopstopmk2.ui.elements.numpad
 import com.christian.ocoochchopstopmk2.ui.elements.ocoochPopupAlert
-import com.christian.ocoochchopstopmk2.ui.input.addToMain
+import com.christian.ocoochchopstopmk2.ui.input.addToMainInputNumber
 import com.christian.ocoochchopstopmk2.ui.util.columnOrRow
 import com.christian.ocoochchopstopmk2.ui.util.ocoochCard
 import com.christian.ocoochchopstopmk2.ui.viewmodel.ChopStopViewModel
 
 @Composable
-fun homePage(chop: ChopStopViewModel, navController: NavHostController) {
+fun homePage(
+    chop: ChopStopViewModel,
+//    navController: NavHostController
+) {
     val isPortrait = LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT
     val padding = 8.dp
 
@@ -107,7 +109,7 @@ fun homePage(chop: ChopStopViewModel, navController: NavHostController) {
                         chop.getDisplayPosition()
                     }
 
-                    distanceDisplay(modifier = Modifier, chop, navController, 160.dp, distance)
+                    distanceDisplay(modifier = Modifier, chop, 160.dp, distance)
 
                     Column {
                         val showGoButton = (chop.inputNumber.isNotEmpty())
@@ -150,7 +152,7 @@ fun homePage(chop: ChopStopViewModel, navController: NavHostController) {
                 ) {
                     numpad(
                         onClick = {
-                            chop.inputNumber = addToMain(it, chop.inputNumber, chop)
+                            chop.inputNumber = addToMainInputNumber(it, chop.inputNumber, chop)
                         },
                         modifier = Modifier.padding(top = 8.dp),
                         isDecimalEnabled = true,
