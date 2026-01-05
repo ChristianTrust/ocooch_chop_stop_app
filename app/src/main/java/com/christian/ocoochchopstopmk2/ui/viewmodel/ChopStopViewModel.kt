@@ -853,6 +853,9 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                     errorTitle = "No Power"
                     errorMessage = "The motor is not powered, Please turn it on"
                 }
+                "MEGA_READY" -> {
+                    chopStopReady()
+                }
                 "CHOP_STOP_MK1" -> {
                     chopStopReady()
                 }
