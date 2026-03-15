@@ -34,6 +34,7 @@ import java.math.BigDecimal
 import java.math.RoundingMode
 import kotlin.math.round
 
+@Suppress("PLATFORM_TYPE_INFERENCE")
 class ChopStopViewModel(application: Application) : AndroidViewModel(application) {
 
     companion object {
@@ -60,83 +61,84 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     }
 
     // Flow variables
-    val speedFlow = application.applicationContext.dataStore.data
+    val speedFlow: Flow<Int> = application.applicationContext.dataStore.data
         .map { preferences -> preferences[SPEED_KEY] ?: 20000 }
-    val accelFlow = application.applicationContext.dataStore.data
+    val accelFlow: Flow<Int> = application.applicationContext.dataStore.data
         .map { preferences -> preferences[ACCEL_KEY] ?: 8000 }
-    val maxDelayFlow = application.applicationContext.dataStore.data
+    val maxDelayFlow: Flow<Int> = application.applicationContext.dataStore.data
         .map { preferences -> preferences[MAX_DELAY_KEY] ?: 320 }
-    val minDelayFlow = application.applicationContext.dataStore.data
+    val minDelayFlow: Flow<Int> = application.applicationContext.dataStore.data
         .map { preferences -> preferences[MIN_DELAY_KEY] ?: 6 }
 
-    val directionFlow = application.applicationContext.dataStore.data
+    val directionFlow: Flow<String> = application.applicationContext.dataStore.data
         .map { preferences -> preferences[DIRECTION_KEY] ?: "RIGHT" }
-    val stepPositionFlow = application.applicationContext.dataStore.data
+    val stepPositionFlow: Flow<Int> = application.applicationContext.dataStore.data
         .map { preferences -> preferences[STEP_POSITION_KEY] ?: 0 }
-    val minStepPositionFlow = application.applicationContext.dataStore.data
+    val minStepPositionFlow: Flow<Int> = application.applicationContext.dataStore.data
         .map { preferences -> preferences[MIN_STEP_POSITION_KEY] ?: 0 }
-    val maxStepPositionFlow = application.applicationContext.dataStore.data
+    val maxStepPositionFlow: Flow<Int> = application.applicationContext.dataStore.data
         .map { preferences -> preferences[MAX_STEP_POSITION_KEY] ?: 166044 }
 
-    val eightFtStopHeadFlow = application.applicationContext.dataStore.data
+    val eightFtStopHeadFlow: Flow<Double> = application.applicationContext.dataStore.data
         .map { preferences -> preferences[EIGHT_FT_STOP_HEAD_KEY] ?: 2.6 }
-    val tenFtStopHeadFlow = application.applicationContext.dataStore.data
+    val tenFtStopHeadFlow: Flow<Double> = application.applicationContext.dataStore.data
         .map { preferences -> preferences[TEN_FT_STOP_HEAD_KEY] ?: 26.6 }
-    val twelveFtStopHeadFlow = application.applicationContext.dataStore.data
+    val twelveFtStopHeadFlow: Flow<Double> = application.applicationContext.dataStore.data
         .map { preferences -> preferences[TWELVE_FT_STOP_HEAD_KEY] ?: 50.6 }
 
-    val stepsPerInchFlow = application.applicationContext.dataStore.data
+    val stepsPerInchFlow: Flow<Double> = application.applicationContext.dataStore.data
         .map { preferences -> preferences[STEPS_PER_INCH_KEY] ?: 1775.36 }
 
-    val stopHeadFlow = application.applicationContext.dataStore.data
+    val stopHeadFlow: Flow<String> = application.applicationContext.dataStore.data
         .map { preferences -> preferences[STOP_HEAD_KEY] ?: "8ft" }
 
-    var speed by mutableIntStateOf(0)
-    var accel by mutableIntStateOf(0)
-    var maxDelay by mutableIntStateOf(0)
-    var minDelay by mutableIntStateOf(0)
+    var speed: Int by mutableIntStateOf(0)
+    var accel: Int by mutableIntStateOf(0)
+    var maxDelay: Int by mutableIntStateOf(0)
+    var minDelay: Int by mutableIntStateOf(0)
 
-    var direction by mutableStateOf("")
-    var stepPosition by mutableIntStateOf(0)
-    var minStepPosition by mutableIntStateOf(0)
-    var maxStepPosition by mutableIntStateOf(0)
+    var direction: String by mutableStateOf("")
+    var stepPosition: Int by mutableIntStateOf(0)
+    var minStepPosition: Int by mutableIntStateOf(0)
+    var maxStepPosition: Int by mutableIntStateOf(0)
 
-    var eightFtStopHead by mutableDoubleStateOf(0.0)
-    var tenFtStopHead by mutableDoubleStateOf(0.0)
-    var twelveFtStopHead by mutableDoubleStateOf(0.0)
+    var eightFtStopHead: Double by mutableDoubleStateOf(0.0)
+    var tenFtStopHead: Double by mutableDoubleStateOf(0.0)
+    var twelveFtStopHead: Double by mutableDoubleStateOf(0.0)
 
-    var stepsPerInch by mutableDoubleStateOf(1775.36)
+    var stepsPerInch: Double by mutableDoubleStateOf(1775.36)
 
-    var stopHead by mutableStateOf("8ft")
+    var stopHead: String by mutableStateOf("8ft")
 
-    var inchPosition by mutableDoubleStateOf(0.0)
-    var parametersSet by mutableStateOf(false)
+    var inchPosition: Double by mutableDoubleStateOf(0.0)
+    var parametersSet: Boolean by mutableStateOf(false)
 
-    var inputNumber by mutableStateOf("")
-    var validNumber by mutableStateOf("")
-    var isInvalidInput by mutableStateOf(false)
-    var isInch by mutableStateOf(true)
-    var unit by mutableStateOf("")
-    var unitMarker by mutableStateOf("")
+    var inputNumber: String by mutableStateOf("")
+    var validNumber: String by mutableStateOf("")
+    var isInvalidInput: Boolean by mutableStateOf(false)
+    var isInch: Boolean by mutableStateOf(true)
+    var unit: String by mutableStateOf("")
+    var unitMarker: String by mutableStateOf("")
 
-    var isMotorPowered by mutableStateOf(false)
-    var isMoving by mutableStateOf(false)
-    var isStopping by mutableStateOf(false)
-    var isHoming by mutableStateOf(false)
-    var isCalibrating by mutableStateOf(false)
+    var isMotorPowered: Boolean by mutableStateOf(false)
+    var isMoving: Boolean by mutableStateOf(false)
+    var isStopping: Boolean by mutableStateOf(false)
+    var isHoming: Boolean by mutableStateOf(false)
+    var isCalibrating: Boolean by mutableStateOf(false)
 
-    var calibrationInput by mutableStateOf("")
-    var newMovePosition by mutableIntStateOf(0)
+    var calibrationInput: String by mutableStateOf("")
+    var newMovePosition: Int by mutableIntStateOf(0)
 
-    var showError by mutableStateOf(false)
-    var errorTitle by mutableStateOf("")
-    var errorMessage by mutableStateOf("")
+    var showError: Boolean by mutableStateOf(false)
+    var errorTitle: String by mutableStateOf("")
+    var errorMessage: String by mutableStateOf("")
 //    var connectionState by mutableIntStateOf(0)
 
-    val terminalText = mutableStateOf<List<String>>(listOf())
-    val stepPositionText = mutableStateOf("")
-    val lastSentLine = mutableStateOf("")
-//    private val dataQueue = ArrayDeque<ByteArray>()
+    val terminalText: MutableState<List<String>> = mutableStateOf<List<String>>(listOf())
+    val stepPositionText: MutableState<String> = mutableStateOf("")
+    val lastSentLine: MutableState<String> = mutableStateOf("")
+
+    //    private val dataQueue = ArrayDeque<ByteArray>()
     private val lineBuffer = StringBuilder()
     private val dataQueue = mutableListOf<ByteArray>()
     private val baudRate = 115200
@@ -162,6 +164,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                     logToTerminal("USB Device Attached")
                     connectToDevice() // Attempt to reconnect
                 }
+
                 UsbManager.ACTION_USB_DEVICE_DETACHED -> {
                     logToTerminal("USB Device Detached")
                     disconnectDevice() // Handle disconnection cleanup
@@ -179,12 +182,28 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
 
         viewModelScope.launch { directionFlow.collect { directionValue -> direction = directionValue } }
         viewModelScope.launch { stepPositionFlow.collect { stepPositionValue -> stepPosition = stepPositionValue } }
-        viewModelScope.launch { minStepPositionFlow.collect { minStepPositionValue -> minStepPosition = minStepPositionValue } }
-        viewModelScope.launch { maxStepPositionFlow.collect { maxStepPositionValue -> maxStepPosition = maxStepPositionValue } }
+        viewModelScope.launch {
+            minStepPositionFlow.collect { minStepPositionValue ->
+                minStepPosition = minStepPositionValue
+            }
+        }
+        viewModelScope.launch {
+            maxStepPositionFlow.collect { maxStepPositionValue ->
+                maxStepPosition = maxStepPositionValue
+            }
+        }
 
-        viewModelScope.launch { eightFtStopHeadFlow.collect { eightFtStopHeadValue -> eightFtStopHead = eightFtStopHeadValue } }
+        viewModelScope.launch {
+            eightFtStopHeadFlow.collect { eightFtStopHeadValue ->
+                eightFtStopHead = eightFtStopHeadValue
+            }
+        }
         viewModelScope.launch { tenFtStopHeadFlow.collect { tenFtStopHeadValue -> tenFtStopHead = tenFtStopHeadValue } }
-        viewModelScope.launch { twelveFtStopHeadFlow.collect { twelveFtStopHeadValue -> twelveFtStopHead = twelveFtStopHeadValue } }
+        viewModelScope.launch {
+            twelveFtStopHeadFlow.collect { twelveFtStopHeadValue ->
+                twelveFtStopHead = twelveFtStopHeadValue
+            }
+        }
 
         viewModelScope.launch { stepsPerInchFlow.collect { stepsPerInchValue -> stepsPerInch = stepsPerInchValue } }
 
@@ -226,16 +245,19 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                         preferences.remove(SPEED_KEY)
                     }
                 }
+
                 "Accel" -> {
                     application.applicationContext.dataStore.edit { preferences ->
                         preferences.remove(ACCEL_KEY)
                     }
                 }
+
                 "Max Delay" -> {
                     application.applicationContext.dataStore.edit { preferences ->
                         preferences.remove(MAX_DELAY_KEY)
                     }
                 }
+
                 "Min Delay" -> {
                     application.applicationContext.dataStore.edit { preferences ->
                         preferences.remove(MIN_DELAY_KEY)
@@ -247,16 +269,19 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                         preferences.remove(DIRECTION_KEY)
                     }
                 }
+
                 "Step Position" -> {
                     application.applicationContext.dataStore.edit { preferences ->
                         preferences.remove(STEP_POSITION_KEY)
                     }
                 }
+
                 "Min Step Position" -> {
                     application.applicationContext.dataStore.edit { preferences ->
                         preferences.remove(MIN_STEP_POSITION_KEY)
                     }
                 }
+
                 "Max Step Position" -> {
                     application.applicationContext.dataStore.edit { preferences ->
                         preferences.remove(MAX_STEP_POSITION_KEY)
@@ -268,11 +293,13 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                         preferences.remove(EIGHT_FT_STOP_HEAD_KEY)
                     }
                 }
+
                 "10ft Stop Head" -> {
                     application.applicationContext.dataStore.edit { preferences ->
                         preferences.remove(TEN_FT_STOP_HEAD_KEY)
                     }
                 }
+
                 "12ft Stop Head" -> {
                     application.applicationContext.dataStore.edit { preferences ->
                         preferences.remove(TWELVE_FT_STOP_HEAD_KEY)
@@ -296,16 +323,19 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                         preferences[SPEED_KEY] = speed
                     }
                 }
+
                 "Accel" -> {
                     application.applicationContext.dataStore.edit { preferences ->
                         preferences[ACCEL_KEY] = accel
                     }
                 }
+
                 "Max Delay" -> {
                     application.applicationContext.dataStore.edit { preferences ->
                         preferences[MAX_DELAY_KEY] = maxDelay
                     }
                 }
+
                 "Min Delay" -> {
                     application.applicationContext.dataStore.edit { preferences ->
                         preferences[MIN_DELAY_KEY] = minDelay
@@ -317,16 +347,19 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                         preferences[DIRECTION_KEY] = direction
                     }
                 }
+
                 "Step Position" -> {
                     application.applicationContext.dataStore.edit { preferences ->
                         preferences[STEP_POSITION_KEY] = stepPosition
                     }
                 }
+
                 "Min Step Position" -> {
                     application.applicationContext.dataStore.edit { preferences ->
                         preferences[MIN_STEP_POSITION_KEY] = minStepPosition
                     }
                 }
+
                 "Max Step Position" -> {
                     application.applicationContext.dataStore.edit { preferences ->
                         preferences[MAX_STEP_POSITION_KEY] = maxStepPosition
@@ -338,11 +371,13 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                         preferences[EIGHT_FT_STOP_HEAD_KEY] = eightFtStopHead
                     }
                 }
+
                 "10ft Stop Head" -> {
                     application.applicationContext.dataStore.edit { preferences ->
                         preferences[TEN_FT_STOP_HEAD_KEY] = tenFtStopHead
                     }
                 }
+
                 "12ft Stop Head" -> {
                     application.applicationContext.dataStore.edit { preferences ->
                         preferences[TWELVE_FT_STOP_HEAD_KEY] = twelveFtStopHead
@@ -395,6 +430,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                 errorTitle = "Too Short"
                 errorMessage = "$inches\" is below the minimum length of $minInches\", For this stop head"
             }
+
             2 -> {
                 logToTerminal("$inches\" is above the max position", "[ERR]")
                 showError = true
@@ -557,6 +593,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                 logToTerminal("to $eightFtStopHead", "[INFO]")
                 saveSettings("8ft Stop Head")
             }
+
             "10ft" -> {
                 logToTerminal("10ft Stop Head recalibrated", "[INFO]")
                 logToTerminal("from $tenFtStopHead", "[INFO]")
@@ -564,6 +601,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                 logToTerminal("to $tenFtStopHead", "[INFO]")
                 saveSettings("10ft Stop Head")
             }
+
             "12ft" -> {
                 logToTerminal("12ft Stop Head recalibrated", "[INFO]")
                 logToTerminal("from $twelveFtStopHead", "[INFO]")
@@ -608,7 +646,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
 
         val filter = IntentFilter(INTENT_ACTION_GRANT_USB)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            application.registerReceiver(usbPermissionReceiver, filter, Context.RECEIVER_EXPORTED )
+            application.registerReceiver(usbPermissionReceiver, filter, Context.RECEIVER_EXPORTED)
         } else {
             @Suppress("UnspecifiedRegisterReceiverFlag")
             application.registerReceiver(usbPermissionReceiver, filter)
@@ -857,12 +895,15 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                 "STARTED" -> {
                     moveStart()
                 }
+
                 "STOPPED" -> {
                     moveStop()
                 }
+
                 "TOPPED" -> { // sometimes the S in STOPPED gets lost
                     moveStop()
                 }
+
                 "POWER:ON" -> {
                     isMotorPowered = true
 
@@ -870,6 +911,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                         closeError()
                     }
                 }
+
                 "POWER:OFF" -> {
                     isMotorPowered = false
 
@@ -877,21 +919,27 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                     errorTitle = "No Power"
                     errorMessage = "The motor is not powered, Please turn it on"
                 }
+
                 "MEGA_READY" -> {
                     chopStopReady()
                 }
+
                 "CHOP_STOP_MK1" -> {
                     chopStopReady()
                 }
+
                 "CHOP_STOP_MK2" -> {
                     chopStopReady()
                 }
+
                 "HOME" -> {
                     isHoming = false
                 }
+
                 "ERR:HOMING_ERROR" -> {
                     home(false)
                 }
+
                 else -> {
                 }
             }
