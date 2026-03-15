@@ -24,6 +24,7 @@ import com.hoho.android.usbserial.driver.UsbSerialProber
 import com.hoho.android.usbserial.util.SerialInputOutputManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -134,7 +135,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     var errorMessage: String by mutableStateOf("")
 //    var connectionState by mutableIntStateOf(0)
 
-    val terminalText: MutableState<List<String>> = mutableStateOf<List<String>>(listOf())
+    val terminalText: MutableState<List<String>> = mutableStateOf(listOf())
     val stepPositionText: MutableState<String> = mutableStateOf("")
     val lastSentLine: MutableState<String> = mutableStateOf("")
 
