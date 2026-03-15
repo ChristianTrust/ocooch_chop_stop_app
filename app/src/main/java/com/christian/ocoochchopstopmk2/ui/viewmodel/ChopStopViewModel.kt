@@ -42,6 +42,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         private val MAX_DELAY_KEY = intPreferencesKey("max_delay")
         private val MIN_DELAY_KEY = intPreferencesKey("min_delay")
 
+        private val DIRECTION_KEY = stringPreferencesKey("direction")
         private val STEP_POSITION_KEY = intPreferencesKey("step_position")
         private val MIN_STEP_POSITION_KEY = intPreferencesKey("min_step_position")
         private val MAX_STEP_POSITION_KEY = intPreferencesKey("max_step_position")
@@ -55,7 +56,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         private val STOP_HEAD_KEY = stringPreferencesKey("stop_head")
 
 
-        const val INTENT_ACTION_GRANT_USB = "com.christian.GRANT_USB"
+        private const val INTENT_ACTION_GRANT_USB = "com.christian.GRANT_USB"
     }
 
     // Flow variables
@@ -68,6 +69,8 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     val minDelayFlow = application.applicationContext.dataStore.data
         .map { preferences -> preferences[MIN_DELAY_KEY] ?: 6 }
 
+    val directionFlow = application.applicationContext.dataStore.data
+        .map { preferences -> preferences[DIRECTION_KEY] ?: "RIGHT" }
     val stepPositionFlow = application.applicationContext.dataStore.data
         .map { preferences -> preferences[STEP_POSITION_KEY] ?: 0 }
     val minStepPositionFlow = application.applicationContext.dataStore.data
@@ -93,6 +96,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     var maxDelay by mutableIntStateOf(0)
     var minDelay by mutableIntStateOf(0)
 
+    var direction by mutableStateOf("")
     var stepPosition by mutableIntStateOf(0)
     var minStepPosition by mutableIntStateOf(0)
     var maxStepPosition by mutableIntStateOf(0)
@@ -173,6 +177,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch { maxDelayFlow.collect { maxDelayValue -> maxDelay = maxDelayValue } }
         viewModelScope.launch { minDelayFlow.collect { minDelayValue -> minDelay = minDelayValue } }
 
+        viewModelScope.launch { directionFlow.collect { directionValue -> direction = directionValue } }
         viewModelScope.launch { stepPositionFlow.collect { stepPositionValue -> stepPosition = stepPositionValue } }
         viewModelScope.launch { minStepPositionFlow.collect { minStepPositionValue -> minStepPosition = minStepPositionValue } }
         viewModelScope.launch { maxStepPositionFlow.collect { maxStepPositionValue -> maxStepPosition = maxStepPositionValue } }
@@ -200,7 +205,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         inchPosition = (stepPosition + getStopHeadSteps()) / stepsPerInch
 
         // Wait for parameters to be set
-        confirmConnection(10)
+        confirmConnection(2)
     }
 
     fun confirmConnection(tries: Int) {
@@ -237,6 +242,11 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                     }
                 }
 
+                "Direction" -> {
+                    application.applicationContext.dataStore.edit { preferences ->
+                        preferences.remove(DIRECTION_KEY)
+                    }
+                }
                 "Step Position" -> {
                     application.applicationContext.dataStore.edit { preferences ->
                         preferences.remove(STEP_POSITION_KEY)
@@ -302,6 +312,11 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                     }
                 }
 
+                "Direction" -> {
+                    application.applicationContext.dataStore.edit { preferences ->
+                        preferences[DIRECTION_KEY] = direction
+                    }
+                }
                 "Step Position" -> {
                     application.applicationContext.dataStore.edit { preferences ->
                         preferences[STEP_POSITION_KEY] = stepPosition
@@ -411,7 +426,8 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
             return
         }
 
-        sendData("MOVE:$steps")
+        val dirSteps = if (direction == "LEFT") -steps else steps
+        sendData("MOVE:$dirSteps")
     }
 
     fun goToPosition(unitType: String = this.unit, distance: Float = this.inputNumber.toFloat()) {
@@ -475,7 +491,11 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         }
 
         if (ready) {
-            sendData("HOME", true)
+            if (direction == "LEFT") {
+                sendData("HOME_R", true)
+            } else {
+                sendData("HOME", true)
+            }
         } else {
             if (isHoming) {
                 isHoming = false
@@ -483,7 +503,11 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                 return
             }
             isHoming = true
-            sendData("MOVE:200", true)
+            if (direction == "LEFT") {
+                sendData("MOVE:-200", true)
+            } else {
+                sendData("MOVE:200", true)
+            }
         }
     }
 
@@ -555,16 +579,28 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     // USB ////////////////////////////////////////////////////////////////////////////////////////////////////// USB //
 
     private fun setupUsbPermissionReceiver() {
+        logToTerminal("USB permission receiver setup")
+
+        // Unregister any existing receiver first
+        usbPermissionReceiver?.let {
+            try {
+                application.unregisterReceiver(it)
+            } catch (_: IllegalArgumentException) {
+                // Receiver wasn't registered, ignore
+            }
+        }
+
         usbPermissionReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
                 if (INTENT_ACTION_GRANT_USB == intent.action) {
-                    val granted = intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)
+                    val granted = intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, true)
                     if (granted) {
                         logToTerminal("USB permission granted")
                         connectToDevice()
                     } else {
                         logToTerminal("USB permission denied", "[ERR]")
                         _connectionState.value = ConnectionState.ERROR
+                        connectToDevice()
                     }
                 }
             }
@@ -572,7 +608,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
 
         val filter = IntentFilter(INTENT_ACTION_GRANT_USB)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            application.registerReceiver(usbPermissionReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+            application.registerReceiver(usbPermissionReceiver, filter, Context.RECEIVER_EXPORTED )
         } else {
             @Suppress("UnspecifiedRegisterReceiverFlag")
             application.registerReceiver(usbPermissionReceiver, filter)
@@ -749,7 +785,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                 logToTerminal("Error during port disconnection: ${e.message}", "[ERR]")
             } finally {
                 port = null
-                _connectionState.value = ConnectionState.ERROR
+                _connectionState.value = ConnectionState.DISCONNECTED
             }
         }
     }
@@ -795,6 +831,16 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun chopStopReady() {
+        _connectionState.update { ConnectionState.CONNECTED }
+        setMegaParameters("all")
+        parametersSet = true
+        viewModelScope.launch {
+            delay(1000)
+            sendData("LOG")
+        }
+    }
+
     private fun handleIncomingLine(line: String) {
         if (line.startsWith("POS:") || line.startsWith("OS:")) { // sometimes the P in POS gets lost
             stepPositionText.value = line
@@ -832,22 +878,13 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                     errorMessage = "The motor is not powered, Please turn it on"
                 }
                 "MEGA_READY" -> {
-                    _connectionState.update { ConnectionState.CONNECTED }
-                    setMegaParameters("all")
-                    parametersSet = true
-                    viewModelScope.launch {
-                        delay(1000)
-                        sendData("LOG")
-                    }
+                    chopStopReady()
+                }
+                "CHOP_STOP_MK1" -> {
+                    chopStopReady()
                 }
                 "CHOP_STOP_MK2" -> {
-                    _connectionState.update { ConnectionState.CONNECTED }
-                    setMegaParameters("all")
-                    parametersSet = true
-                    viewModelScope.launch {
-                        delay(1000)
-                        sendData("LOG")
-                    }
+                    chopStopReady()
                 }
                 "HOME" -> {
                     isHoming = false
@@ -886,11 +923,6 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun getDisplayPosition(): String {
-        if (connectionState.value == ConnectionState.DISCONNECTED) return "STATE: Disconnected"
-        if (connectionState.value == ConnectionState.CONNECTING) return "STATE: Loading..."
-        if (connectionState.value == ConnectionState.ERROR) return "STATE: Error"
-        if (isHoming) return "STATE: Homing..."
-
         inchPosition = (stepPosition + getStopHeadSteps()) / stepsPerInch
         return if (unit == "MM:") {
             "%.1f".format(inchPosition * 25.4)
@@ -911,6 +943,13 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
 
     override fun onCleared() {
         super.onCleared()
+        usbPermissionReceiver?.let {
+            try {
+                application.unregisterReceiver(it)
+            } catch (_: IllegalArgumentException) {
+                // Already unregistered
+            }
+        }
         getApplication<Application>().unregisterReceiver(usbBroadcastReceiver)
         disconnectDevice()
     }

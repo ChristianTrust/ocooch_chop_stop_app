@@ -23,19 +23,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.zIndex
-import androidx.navigation.NavHostController
 import com.christian.ocoochchopstopmk2.R.drawable.power_16
 import com.christian.ocoochchopstopmk2.ui.elements.distanceDisplay
 import com.christian.ocoochchopstopmk2.ui.elements.numpad
 import com.christian.ocoochchopstopmk2.ui.elements.terminalView
-import com.christian.ocoochchopstopmk2.ui.input.addToDefault
+import com.christian.ocoochchopstopmk2.ui.input.addToDefaultInputNumber
 import com.christian.ocoochchopstopmk2.ui.util.columnOrRow
 import com.christian.ocoochchopstopmk2.ui.util.dropDownIcons
 import com.christian.ocoochchopstopmk2.ui.util.ocoochCard
 import com.christian.ocoochchopstopmk2.ui.viewmodel.ChopStopViewModel
 
 @Composable
-fun settingsPage(chop: ChopStopViewModel, navController: NavHostController) {
+fun settingsPage(
+    chop: ChopStopViewModel,
+//    navController: NavHostController
+) {
     val isPortrait = LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT
     val distanceDisplayWidth = if (isPortrait) 232.dp else 464.dp
     val numpadWeight = if (isPortrait) 1f else 2f
@@ -65,6 +67,7 @@ fun settingsPage(chop: ChopStopViewModel, navController: NavHostController) {
         Pair("Max Delay", chop.maxDelay),
         Pair("Min Delay", chop.minDelay),
 
+        Pair("Direction", chop.direction),
         Pair("Step Position", chop.stepPosition),
         Pair("Min Step Position", chop.minStepPosition),
         Pair("Max Step Position", chop.maxStepPosition),
@@ -95,6 +98,7 @@ fun settingsPage(chop: ChopStopViewModel, navController: NavHostController) {
             "Max Delay" -> chop.maxDelay = inputNumberDefault.toInt()
             "Min Delay" -> chop.minDelay = inputNumberDefault.toInt()
 
+            "Direction" -> chop.direction = inputNumberDefault.toString()
             "Step Position" -> chop.stepPosition = inputNumberDefault.toInt()
             "Min Step Position" -> chop.minStepPosition = inputNumberDefault.toInt()
             "Max Step Position" -> chop.maxStepPosition = inputNumberDefault.toInt()
@@ -148,7 +152,7 @@ fun settingsPage(chop: ChopStopViewModel, navController: NavHostController) {
                     )
                 }
 
-                distanceDisplay(modifier = Modifier, chop, navController, distanceDisplayWidth)
+                distanceDisplay(modifier = Modifier, chop, distanceDisplayWidth)
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -177,7 +181,7 @@ fun settingsPage(chop: ChopStopViewModel, navController: NavHostController) {
                             if (selectedMoveInput) {
                                 numpad(
                                     onClick = {
-                                        inputNumber = addToDefault(it, inputNumber, false)
+                                        inputNumber = addToDefaultInputNumber(it, inputNumber, false)
                                     },
                                     onConfirmClick = {
                                         selectedMoveInput = false
@@ -189,7 +193,7 @@ fun settingsPage(chop: ChopStopViewModel, navController: NavHostController) {
                             } else {
                                 numpad(
                                     onClick = {
-                                        inputNumberDefault = addToDefault(it, inputNumberDefault, isDefaultDouble)
+                                        inputNumberDefault = addToDefaultInputNumber(it, inputNumberDefault, isDefaultDouble)
                                     },
                                     onConfirmClick = { applyAndCloseDefault(selectedDefault) },
                                     isDecimalEnabled = isDefaultDouble,
@@ -269,7 +273,12 @@ fun settingsPage(chop: ChopStopViewModel, navController: NavHostController) {
                                         ocoochCard(
                                             onClick = {
                                                 terminalScrollToEnd++
-                                                if (selectedDefault != key) {
+                                                if (key == "Direction") {
+                                                    val newDir = if (chop.direction == "RIGHT") "LEFT" else "RIGHT"
+                                                    chop.direction = newDir
+                                                    chop.logToTerminal("Direction set to $newDir", "[INFO]")
+                                                    chop.saveSettings("Direction")
+                                                } else if (selectedDefault != key) {
                                                     selectedDefault = key
                                                     orgDefaultVal = value.toString()
                                                     inputNumberDefault = value.toString()

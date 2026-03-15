@@ -2,7 +2,7 @@ package com.christian.ocoochchopstopmk2.ui.input
 
 import com.christian.ocoochchopstopmk2.ui.viewmodel.ChopStopViewModel
 
-fun addToDefault(number: String, inputNumber: String, isDouble: Boolean): String {
+fun addToDefaultInputNumber(number: String, inputNumber: String, isDouble: Boolean): String {
     return when (number) {
         "backspace" -> if (inputNumber.isNotEmpty()) {
             inputNumber.dropLast(1)
@@ -17,7 +17,7 @@ fun addToDefault(number: String, inputNumber: String, isDouble: Boolean): String
     }
 }
 
-fun addToMain(number: String, inputNumber: String, chop: ChopStopViewModel): String {
+fun addToMainInputNumber(number: String, inputNumber: String, chop: ChopStopViewModel): String {
     val maxDecimalPlaces = if (chop.isInch) 4 else 2
     val maxDigits = 7
     val newInputNumber = inputNumber + number
