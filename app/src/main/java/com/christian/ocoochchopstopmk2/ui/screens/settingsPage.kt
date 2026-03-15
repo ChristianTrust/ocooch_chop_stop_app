@@ -67,6 +67,7 @@ fun settingsPage(
         Pair("Max Delay", chop.maxDelay),
         Pair("Min Delay", chop.minDelay),
 
+        Pair("Direction", chop.direction),
         Pair("Step Position", chop.stepPosition),
         Pair("Min Step Position", chop.minStepPosition),
         Pair("Max Step Position", chop.maxStepPosition),
@@ -97,6 +98,7 @@ fun settingsPage(
             "Max Delay" -> chop.maxDelay = inputNumberDefault.toInt()
             "Min Delay" -> chop.minDelay = inputNumberDefault.toInt()
 
+            "Direction" -> chop.direction = inputNumberDefault.toString()
             "Step Position" -> chop.stepPosition = inputNumberDefault.toInt()
             "Min Step Position" -> chop.minStepPosition = inputNumberDefault.toInt()
             "Max Step Position" -> chop.maxStepPosition = inputNumberDefault.toInt()
@@ -271,7 +273,12 @@ fun settingsPage(
                                         ocoochCard(
                                             onClick = {
                                                 terminalScrollToEnd++
-                                                if (selectedDefault != key) {
+                                                if (key == "Direction") {
+                                                    val newDir = if (chop.direction == "RIGHT") "LEFT" else "RIGHT"
+                                                    chop.direction = newDir
+                                                    chop.logToTerminal("Direction set to $newDir", "[INFO]")
+                                                    chop.saveSettings("Direction")
+                                                } else if (selectedDefault != key) {
                                                     selectedDefault = key
                                                     orgDefaultVal = value.toString()
                                                     inputNumberDefault = value.toString()
