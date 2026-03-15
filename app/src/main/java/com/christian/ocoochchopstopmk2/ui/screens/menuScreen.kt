@@ -212,7 +212,7 @@ fun drawerContent(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     content = {
 
-                        val stopHeadOptions = listOf("8ft", "10ft", "12ft")
+                        val stopHeadOptions = if (chop.tableLength == "6ft") listOf("6ft", "8ft") else listOf("8ft", "10ft")
                         stopHeadOptions.forEach { option ->
 
                             val stopHeadCardColors = if (chop.stopHead == option) {

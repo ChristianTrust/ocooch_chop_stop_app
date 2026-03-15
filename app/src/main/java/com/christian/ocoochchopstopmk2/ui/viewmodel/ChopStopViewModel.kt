@@ -51,11 +51,12 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
 
         private val EIGHT_FT_STOP_HEAD_KEY = doublePreferencesKey("8ft_stop_head")
         private val TEN_FT_STOP_HEAD_KEY = doublePreferencesKey("10ft_stop_head")
-        private val TWELVE_FT_STOP_HEAD_KEY = doublePreferencesKey("12ft_stop_head")
+        private val SIX_FT_STOP_HEAD_KEY = doublePreferencesKey("6ft_stop_head")
 
         private val STEPS_PER_INCH_KEY = doublePreferencesKey("steps_per_inch")
 
         private val STOP_HEAD_KEY = stringPreferencesKey("stop_head")
+        private val TABLE_LENGTH_KEY = stringPreferencesKey("table_length")
 
 
         private const val INTENT_ACTION_GRANT_USB = "com.christian.GRANT_USB"
@@ -84,14 +85,16 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         .map { preferences -> preferences[EIGHT_FT_STOP_HEAD_KEY] ?: 2.6 }
     val tenFtStopHeadFlow: Flow<Double> = application.applicationContext.dataStore.data
         .map { preferences -> preferences[TEN_FT_STOP_HEAD_KEY] ?: 26.6 }
-    val twelveFtStopHeadFlow: Flow<Double> = application.applicationContext.dataStore.data
-        .map { preferences -> preferences[TWELVE_FT_STOP_HEAD_KEY] ?: 50.6 }
+    val sixFtStopHeadFlow: Flow<Double> = application.applicationContext.dataStore.data
+        .map { preferences -> preferences[SIX_FT_STOP_HEAD_KEY] ?: 2.6 }
 
     val stepsPerInchFlow: Flow<Double> = application.applicationContext.dataStore.data
         .map { preferences -> preferences[STEPS_PER_INCH_KEY] ?: 1775.36 }
 
     val stopHeadFlow: Flow<String> = application.applicationContext.dataStore.data
         .map { preferences -> preferences[STOP_HEAD_KEY] ?: "8ft" }
+    val tableLengthFlow: Flow<String> = application.applicationContext.dataStore.data
+        .map { preferences -> preferences[TABLE_LENGTH_KEY] ?: "8ft" }
 
     var speed: Int by mutableIntStateOf(0)
     var accel: Int by mutableIntStateOf(0)
@@ -105,11 +108,12 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
 
     var eightFtStopHead: Double by mutableDoubleStateOf(0.0)
     var tenFtStopHead: Double by mutableDoubleStateOf(0.0)
-    var twelveFtStopHead: Double by mutableDoubleStateOf(0.0)
+    var sixFtStopHead: Double by mutableDoubleStateOf(0.0)
 
     var stepsPerInch: Double by mutableDoubleStateOf(1775.36)
 
     var stopHead: String by mutableStateOf("8ft")
+    var tableLength: String by mutableStateOf("8ft")
 
     var inchPosition: Double by mutableDoubleStateOf(0.0)
     var parametersSet: Boolean by mutableStateOf(false)
@@ -201,14 +205,15 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         }
         viewModelScope.launch { tenFtStopHeadFlow.collect { tenFtStopHeadValue -> tenFtStopHead = tenFtStopHeadValue } }
         viewModelScope.launch {
-            twelveFtStopHeadFlow.collect { twelveFtStopHeadValue ->
-                twelveFtStopHead = twelveFtStopHeadValue
+            sixFtStopHeadFlow.collect { sixFtStopHeadValue ->
+                sixFtStopHead = sixFtStopHeadValue
             }
         }
 
         viewModelScope.launch { stepsPerInchFlow.collect { stepsPerInchValue -> stepsPerInch = stepsPerInchValue } }
 
         viewModelScope.launch { stopHeadFlow.collect { stopHeadValue -> stopHead = stopHeadValue } }
+        viewModelScope.launch { tableLengthFlow.collect { tableLengthValue -> tableLength = tableLengthValue } }
 
         setupUsbPermissionReceiver()
         // Register for USB events
@@ -301,15 +306,21 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                     }
                 }
 
-                "12ft Stop Head" -> {
+                "6ft Stop Head" -> {
                     application.applicationContext.dataStore.edit { preferences ->
-                        preferences.remove(TWELVE_FT_STOP_HEAD_KEY)
+                        preferences.remove(SIX_FT_STOP_HEAD_KEY)
                     }
                 }
 
                 "Steps/Inch" -> {
                     application.applicationContext.dataStore.edit { preferences ->
                         preferences.remove(STEPS_PER_INCH_KEY)
+                    }
+                }
+
+                "Table Length" -> {
+                    application.applicationContext.dataStore.edit { preferences ->
+                        preferences.remove(TABLE_LENGTH_KEY)
                     }
                 }
             }
@@ -347,6 +358,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                     application.applicationContext.dataStore.edit { preferences ->
                         preferences[DIRECTION_KEY] = direction
                     }
+                    setMegaParameters("Direction")
                 }
 
                 "Step Position" -> {
@@ -379,9 +391,9 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                     }
                 }
 
-                "12ft Stop Head" -> {
+                "6ft Stop Head" -> {
                     application.applicationContext.dataStore.edit { preferences ->
-                        preferences[TWELVE_FT_STOP_HEAD_KEY] = twelveFtStopHead
+                        preferences[SIX_FT_STOP_HEAD_KEY] = sixFtStopHead
                     }
                 }
 
@@ -396,6 +408,12 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                         preferences[STOP_HEAD_KEY] = stopHead
                     }
                 }
+
+                "Table Length" -> {
+                    application.applicationContext.dataStore.edit { preferences ->
+                        preferences[TABLE_LENGTH_KEY] = tableLength
+                    }
+                }
             }
         }
     }
@@ -404,7 +422,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         return when (stopHead) {
             "8ft" -> (eightFtStopHead * stepsPerInch).toInt()
             "10ft" -> (tenFtStopHead * stepsPerInch).toInt()
-            "12ft" -> (twelveFtStopHead * stepsPerInch).toInt()
+            "6ft" -> (sixFtStopHead * stepsPerInch).toInt()
             else -> 0
         }
     }
@@ -463,8 +481,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
             return
         }
 
-        val dirSteps = if (direction == "LEFT") -steps else steps
-        sendData("MOVE:$dirSteps")
+        sendData("MOVE:$steps")
     }
 
     fun goToPosition(unitType: String = this.unit, distance: Float = this.inputNumber.toFloat()) {
@@ -528,11 +545,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         }
 
         if (ready) {
-            if (direction == "LEFT") {
-                sendData("HOME_R", true)
-            } else {
-                sendData("HOME", true)
-            }
+            sendData("HOME", true)
         } else {
             if (isHoming) {
                 isHoming = false
@@ -540,11 +553,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                 return
             }
             isHoming = true
-            if (direction == "LEFT") {
-                sendData("MOVE:-200", true)
-            } else {
-                sendData("MOVE:200", true)
-            }
+            sendData("MOVE:200", true)
         }
     }
 
@@ -603,12 +612,12 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                 saveSettings("10ft Stop Head")
             }
 
-            "12ft" -> {
-                logToTerminal("12ft Stop Head recalibrated", "[INFO]")
-                logToTerminal("from $twelveFtStopHead", "[INFO]")
-                twelveFtStopHead = getCalibrationInput()
-                logToTerminal("to $twelveFtStopHead", "[INFO]")
-                saveSettings("12ft Stop Head")
+            "6ft" -> {
+                logToTerminal("6ft Stop Head recalibrated", "[INFO]")
+                logToTerminal("from $sixFtStopHead", "[INFO]")
+                sixFtStopHead = getCalibrationInput()
+                logToTerminal("to $sixFtStopHead", "[INFO]")
+                saveSettings("6ft Stop Head")
             }
         }
 
@@ -881,7 +890,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     }
 
     private fun handleIncomingLine(line: String) {
-        if (line.startsWith("POS:") || line.startsWith("OS:")) { // sometimes the P in POS gets lost
+        if (line.startsWith("POS:") || line.startsWith("OS:") || line.startsWith("S:")) { // sometimes the P in POS gets lost
             stepPositionText.value = line
 
             val parts = line.split(":")
@@ -959,6 +968,9 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                 sendData("MIN_DELAY:$minDelay")
                 delay(100)
                 sendData("POS:$stepPosition")
+                delay(100)
+                val invert = if (direction == "LEFT") 1 else 0
+                sendData("INVERT_DIR:$invert")
             }
         } else {
             when (param) {
@@ -967,6 +979,10 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                 "Max Delay" -> sendData("MAX_DELAY:$maxDelay")
                 "Min Delay" -> sendData("MIN_DELAY:$minDelay")
                 "Step Position" -> sendData("POS:$stepPosition")
+                "Direction" -> {
+                    val invert = if (direction == "LEFT") 1 else 0
+                    sendData("INVERT_DIR:$invert")
+                }
             }
         }
     }

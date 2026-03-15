@@ -56,7 +56,6 @@ fun settingsPage(
     var defaultExpanded by remember { mutableStateOf(false) }
     var selectedMoveInput by remember { mutableStateOf(false) }
     var selectedDefault by remember { mutableStateOf("") }
-    var orgDefaultVal by remember { mutableStateOf("") }
     var inputNumberDefault by remember { mutableStateOf("") }
     var isDefaultDouble by remember { mutableStateOf(false) }
     var terminalScrollToEnd by remember { mutableStateOf(0) }
@@ -67,6 +66,7 @@ fun settingsPage(
         Pair("Max Delay", chop.maxDelay),
         Pair("Min Delay", chop.minDelay),
 
+        Pair("Table Length", chop.tableLength),
         Pair("Direction", chop.direction),
         Pair("Step Position", chop.stepPosition),
         Pair("Min Step Position", chop.minStepPosition),
@@ -74,7 +74,7 @@ fun settingsPage(
 
         Pair("8ft Stop Head", chop.eightFtStopHead),
         Pair("10ft Stop Head", chop.tenFtStopHead),
-        Pair("12ft Stop Head", chop.twelveFtStopHead),
+        Pair("6ft Stop Head", chop.sixFtStopHead),
 
         Pair("Steps/Inch", chop.stepsPerInch)
     )
@@ -98,14 +98,15 @@ fun settingsPage(
             "Max Delay" -> chop.maxDelay = inputNumberDefault.toInt()
             "Min Delay" -> chop.minDelay = inputNumberDefault.toInt()
 
-            "Direction" -> chop.direction = inputNumberDefault.toString()
+            "Table Length" -> chop.tableLength = inputNumberDefault
+            "Direction" -> chop.direction = inputNumberDefault
             "Step Position" -> chop.stepPosition = inputNumberDefault.toInt()
             "Min Step Position" -> chop.minStepPosition = inputNumberDefault.toInt()
             "Max Step Position" -> chop.maxStepPosition = inputNumberDefault.toInt()
 
             "8ft Stop Head" -> chop.eightFtStopHead = inputNumberDefault.toDouble()
             "10ft Stop Head" -> chop.tenFtStopHead = inputNumberDefault.toDouble()
-            "12ft Stop Head" -> chop.twelveFtStopHead = inputNumberDefault.toDouble()
+            "6ft Stop Head" -> chop.sixFtStopHead = inputNumberDefault.toDouble()
 
             "Steps/Inch" -> chop.stepsPerInch = inputNumberDefault.toDouble()
         }
@@ -172,6 +173,8 @@ fun settingsPage(
 
                     if (selectedDefault != "" || selectedMoveInput == true) {
 
+                        val isTableLength = selectedDefault == "Table Length"
+
                         Column(
                             modifier = Modifier
                                 .weight(numpadWeight)
@@ -190,6 +193,32 @@ fun settingsPage(
                                     modifier = Modifier
                                         .padding(4.dp)
                                 )
+                            } else if (isTableLength) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    ocoochCard(
+                                        text = "8ft",
+                                        onClick = {
+                                            inputNumberDefault = "8ft"
+                                            applyAndCloseDefault("Table Length")
+                                        },
+                                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                                        colors = if (inputNumberDefault == "8ft") listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.onPrimary) else listOf(MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.onSurface)
+                                    )
+                                    ocoochCard(
+                                        text = "6ft",
+                                        onClick = {
+                                            inputNumberDefault = "6ft"
+                                            applyAndCloseDefault("Table Length")
+                                        },
+                                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                                        colors = if (inputNumberDefault == "6ft") listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.onPrimary) else listOf(MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.onSurface)
+                                    )
+                                }
                             } else {
                                 numpad(
                                     onClick = {
@@ -280,7 +309,6 @@ fun settingsPage(
                                                     chop.saveSettings("Direction")
                                                 } else if (selectedDefault != key) {
                                                     selectedDefault = key
-                                                    orgDefaultVal = value.toString()
                                                     inputNumberDefault = value.toString()
                                                 } else selectedDefault = ""
                                             },
@@ -309,7 +337,7 @@ fun settingsPage(
                                                     isDefaultDouble = when (key) {
                                                         "8ft Stop Head",
                                                         "10ft Stop Head",
-                                                        "12ft Stop Head",
+                                                        "6ft Stop Head",
 
                                                         "Steps/Inch" -> true
                                                         else -> false
@@ -550,7 +578,7 @@ fun settingsPage(
                                     ) {
                                         if (selectedOption == "MOVE:") {
                                             var isNegative = inputNumber.startsWith("-")
-                                            var symbol = if (isNegative) "-" else "+"
+                                            val symbol = if (isNegative) "-" else "+"
 
                                             ocoochCard(
                                                 text = symbol,
