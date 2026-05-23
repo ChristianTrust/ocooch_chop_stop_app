@@ -43,8 +43,8 @@ fun addToMainInputNumber(number: String, inputNumber: String, chop: ChopStopView
         if (number == ".") return inputNumber
 
         val parts = inputNumber.split(".")
-        var mainPart = parts[0]
-        var decimalPart = parts[1]
+        val mainPart = parts[0]
+        val decimalPart = parts[1]
 
         if (parts.size == 2) {
             if (decimalPart.length > maxDecimalPlaces) {

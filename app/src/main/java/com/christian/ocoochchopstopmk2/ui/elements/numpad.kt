@@ -1,5 +1,6 @@
 package com.christian.ocoochchopstopmk2.ui.elements
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,6 +17,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.christian.ocoochchopstopmk2.ui.util.ocoochCard
 
+@SuppressLint("ComposableNaming")
 @Composable
 fun numpad(
     onClick: (String) -> Unit,

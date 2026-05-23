@@ -1,5 +1,6 @@
 package com.christian.ocoochchopstopmk2.ui.theme
 
+import android.annotation.SuppressLint
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
@@ -85,6 +86,7 @@ private val LightColorScheme = lightColorScheme(
     surfaceDim = Color(0xFFA0A0A0)
 )
 
+@SuppressLint("ComposableNaming")
 @Composable
 fun ocoochChopStopTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),

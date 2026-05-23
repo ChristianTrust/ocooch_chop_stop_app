@@ -1,5 +1,6 @@
 package com.christian.ocoochchopstopmk2.ui.screens
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -17,15 +18,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+@SuppressLint("ComposableNaming")
 @Composable
 fun dinoGame() {
-    var dinoY by remember { mutableStateOf(0f) }
-    var dinoVelocity by remember { mutableStateOf(0f) }
+    var dinoY by remember { mutableFloatStateOf(0f) }
+    var dinoVelocity by remember { mutableFloatStateOf(0f) }
     var isOnGround by remember { mutableStateOf(true) }
 
     val obstacles = remember { mutableStateListOf(Offset(1000f, 0f)) }
-    var speed by remember { mutableStateOf(8f) }
-    var score by remember { mutableStateOf(0) }
+    var speed by remember { mutableFloatStateOf(8f) }
+    var score by remember { mutableIntStateOf(0) }
     var gameOver by remember { mutableStateOf(false) }
     var gameStarted by remember { mutableStateOf(false) }
 

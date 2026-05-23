@@ -1,5 +1,6 @@
 package com.christian.ocoochchopstopmk2.ui.elements
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -12,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import com.christian.ocoochchopstopmk2.ui.input.addToMainInputNumber
 import com.christian.ocoochchopstopmk2.ui.viewmodel.ChopStopViewModel
 
+@SuppressLint("ComposableNaming")
 @Composable
 fun calibrationPopup(
     chop: ChopStopViewModel,

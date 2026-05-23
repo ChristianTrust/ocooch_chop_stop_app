@@ -9,14 +9,10 @@ import android.content.IntentFilter
 import android.hardware.usb.UsbManager
 import android.os.Build
 import androidx.compose.runtime.*
-import androidx.datastore.preferences.core.doublePreferencesKey
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.intPreferencesKey
-import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.application
 import androidx.lifecycle.viewModelScope
-import com.christian.ocoochchopstopmk2.data.dataStore
+import com.christian.ocoochchopstopmk2.data.ChopStopRepository
 import com.hoho.android.usbserial.driver.CdcAcmSerialDriver
 import com.hoho.android.usbserial.driver.UsbSerialDriver
 import com.hoho.android.usbserial.driver.UsbSerialPort
@@ -27,7 +23,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -38,63 +33,31 @@ import kotlin.math.round
 @Suppress("PLATFORM_TYPE_INFERENCE")
 class ChopStopViewModel(application: Application) : AndroidViewModel(application) {
 
+    private val repository = ChopStopRepository(application.applicationContext)
+
     companion object {
-        private val SPEED_KEY = intPreferencesKey("speed")
-        private val ACCEL_KEY = intPreferencesKey("accel")
-        private val MAX_DELAY_KEY = intPreferencesKey("max_delay")
-        private val MIN_DELAY_KEY = intPreferencesKey("min_delay")
-
-        private val DIRECTION_KEY = stringPreferencesKey("direction")
-        private val STEP_POSITION_KEY = intPreferencesKey("step_position")
-        private val MIN_STEP_POSITION_KEY = intPreferencesKey("min_step_position")
-        private val MAX_STEP_POSITION_KEY = intPreferencesKey("max_step_position")
-
-        private val EIGHT_FT_STOP_HEAD_KEY = doublePreferencesKey("8ft_stop_head")
-        private val TEN_FT_STOP_HEAD_KEY = doublePreferencesKey("10ft_stop_head")
-        private val SIX_FT_STOP_HEAD_KEY = doublePreferencesKey("6ft_stop_head")
-
-        private val STEPS_PER_INCH_KEY = doublePreferencesKey("steps_per_inch")
-
-        private val STOP_HEAD_KEY = stringPreferencesKey("stop_head")
-        private val TABLE_LENGTH_KEY = stringPreferencesKey("table_length")
-
-
         private const val INTENT_ACTION_GRANT_USB = "com.christian.GRANT_USB"
     }
 
     // Flow variables
-    val speedFlow: Flow<Int> = application.applicationContext.dataStore.data
-        .map { preferences -> preferences[SPEED_KEY] ?: 20000 }
-    val accelFlow: Flow<Int> = application.applicationContext.dataStore.data
-        .map { preferences -> preferences[ACCEL_KEY] ?: 8000 }
-    val maxDelayFlow: Flow<Int> = application.applicationContext.dataStore.data
-        .map { preferences -> preferences[MAX_DELAY_KEY] ?: 320 }
-    val minDelayFlow: Flow<Int> = application.applicationContext.dataStore.data
-        .map { preferences -> preferences[MIN_DELAY_KEY] ?: 6 }
+    val speedFlow: Flow<Int> = repository.speedFlow
+    val accelFlow: Flow<Int> = repository.accelFlow
+    val maxDelayFlow: Flow<Int> = repository.maxDelayFlow
+    val minDelayFlow: Flow<Int> = repository.minDelayFlow
 
-    val directionFlow: Flow<String> = application.applicationContext.dataStore.data
-        .map { preferences -> preferences[DIRECTION_KEY] ?: "RIGHT" }
-    val stepPositionFlow: Flow<Int> = application.applicationContext.dataStore.data
-        .map { preferences -> preferences[STEP_POSITION_KEY] ?: 0 }
-    val minStepPositionFlow: Flow<Int> = application.applicationContext.dataStore.data
-        .map { preferences -> preferences[MIN_STEP_POSITION_KEY] ?: 0 }
-    val maxStepPositionFlow: Flow<Int> = application.applicationContext.dataStore.data
-        .map { preferences -> preferences[MAX_STEP_POSITION_KEY] ?: 166044 }
+    val directionFlow: Flow<String> = repository.directionFlow
+    val stepPositionFlow: Flow<Int> = repository.stepPositionFlow
+    val minStepPositionFlow: Flow<Int> = repository.minStepPositionFlow
+    val maxStepPositionFlow: Flow<Int> = repository.maxStepPositionFlow
 
-    val eightFtStopHeadFlow: Flow<Double> = application.applicationContext.dataStore.data
-        .map { preferences -> preferences[EIGHT_FT_STOP_HEAD_KEY] ?: 2.6 }
-    val tenFtStopHeadFlow: Flow<Double> = application.applicationContext.dataStore.data
-        .map { preferences -> preferences[TEN_FT_STOP_HEAD_KEY] ?: 26.6 }
-    val sixFtStopHeadFlow: Flow<Double> = application.applicationContext.dataStore.data
-        .map { preferences -> preferences[SIX_FT_STOP_HEAD_KEY] ?: 2.6 }
+    val eightFtStopHeadFlow: Flow<Double> = repository.eightFtStopHeadFlow
+    val tenFtStopHeadFlow: Flow<Double> = repository.tenFtStopHeadFlow
+    val sixFtStopHeadFlow: Flow<Double> = repository.sixFtStopHeadFlow
 
-    val stepsPerInchFlow: Flow<Double> = application.applicationContext.dataStore.data
-        .map { preferences -> preferences[STEPS_PER_INCH_KEY] ?: 1775.36 }
+    val stepsPerInchFlow: Flow<Double> = repository.stepsPerInchFlow
 
-    val stopHeadFlow: Flow<String> = application.applicationContext.dataStore.data
-        .map { preferences -> preferences[STOP_HEAD_KEY] ?: "8ft" }
-    val tableLengthFlow: Flow<String> = application.applicationContext.dataStore.data
-        .map { preferences -> preferences[TABLE_LENGTH_KEY] ?: "8ft" }
+    val stopHeadFlow: Flow<String> = repository.stopHeadFlow
+    val tableLengthFlow: Flow<String> = repository.tableLengthFlow
 
     var speed: Int by mutableIntStateOf(0)
     var accel: Int by mutableIntStateOf(0)
@@ -246,83 +209,19 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     fun resetDefault(key: String) {
         viewModelScope.launch {
             when (key) {
-                "Speed" -> {
-                    application.applicationContext.dataStore.edit { preferences ->
-                        preferences.remove(SPEED_KEY)
-                    }
-                }
-
-                "Accel" -> {
-                    application.applicationContext.dataStore.edit { preferences ->
-                        preferences.remove(ACCEL_KEY)
-                    }
-                }
-
-                "Max Delay" -> {
-                    application.applicationContext.dataStore.edit { preferences ->
-                        preferences.remove(MAX_DELAY_KEY)
-                    }
-                }
-
-                "Min Delay" -> {
-                    application.applicationContext.dataStore.edit { preferences ->
-                        preferences.remove(MIN_DELAY_KEY)
-                    }
-                }
-
-                "Direction" -> {
-                    application.applicationContext.dataStore.edit { preferences ->
-                        preferences.remove(DIRECTION_KEY)
-                    }
-                }
-
-                "Step Position" -> {
-                    application.applicationContext.dataStore.edit { preferences ->
-                        preferences.remove(STEP_POSITION_KEY)
-                    }
-                }
-
-                "Min Step Position" -> {
-                    application.applicationContext.dataStore.edit { preferences ->
-                        preferences.remove(MIN_STEP_POSITION_KEY)
-                    }
-                }
-
-                "Max Step Position" -> {
-                    application.applicationContext.dataStore.edit { preferences ->
-                        preferences.remove(MAX_STEP_POSITION_KEY)
-                    }
-                }
-
-                "8ft Stop Head" -> {
-                    application.applicationContext.dataStore.edit { preferences ->
-                        preferences.remove(EIGHT_FT_STOP_HEAD_KEY)
-                    }
-                }
-
-                "10ft Stop Head" -> {
-                    application.applicationContext.dataStore.edit { preferences ->
-                        preferences.remove(TEN_FT_STOP_HEAD_KEY)
-                    }
-                }
-
-                "6ft Stop Head" -> {
-                    application.applicationContext.dataStore.edit { preferences ->
-                        preferences.remove(SIX_FT_STOP_HEAD_KEY)
-                    }
-                }
-
-                "Steps/Inch" -> {
-                    application.applicationContext.dataStore.edit { preferences ->
-                        preferences.remove(STEPS_PER_INCH_KEY)
-                    }
-                }
-
-                "Table Length" -> {
-                    application.applicationContext.dataStore.edit { preferences ->
-                        preferences.remove(TABLE_LENGTH_KEY)
-                    }
-                }
+                "Speed" -> repository.resetSpeed()
+                "Accel" -> repository.resetAccel()
+                "Max Delay" -> repository.resetMaxDelay()
+                "Min Delay" -> repository.resetMinDelay()
+                "Direction" -> repository.resetDirection()
+                "Step Position" -> repository.resetStepPosition()
+                "Min Step Position" -> repository.resetMinStepPosition()
+                "Max Step Position" -> repository.resetMaxStepPosition()
+                "8ft Stop Head" -> repository.resetEightFtStopHead()
+                "10ft Stop Head" -> repository.resetTenFtStopHead()
+                "6ft Stop Head" -> repository.resetSixFtStopHead()
+                "Steps/Inch" -> repository.resetStepsPerInch()
+                "Table Length" -> repository.resetTableLength()
             }
         }
     }
@@ -330,90 +229,23 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     fun saveSettings(key: String) {
         viewModelScope.launch {
             when (key) {
-                "Speed" -> {
-                    application.applicationContext.dataStore.edit { preferences ->
-                        preferences[SPEED_KEY] = speed
-                    }
-                }
-
-                "Accel" -> {
-                    application.applicationContext.dataStore.edit { preferences ->
-                        preferences[ACCEL_KEY] = accel
-                    }
-                }
-
-                "Max Delay" -> {
-                    application.applicationContext.dataStore.edit { preferences ->
-                        preferences[MAX_DELAY_KEY] = maxDelay
-                    }
-                }
-
-                "Min Delay" -> {
-                    application.applicationContext.dataStore.edit { preferences ->
-                        preferences[MIN_DELAY_KEY] = minDelay
-                    }
-                }
-
+                "Speed" -> repository.saveSpeed(speed)
+                "Accel" -> repository.saveAccel(accel)
+                "Max Delay" -> repository.saveMaxDelay(maxDelay)
+                "Min Delay" -> repository.saveMinDelay(minDelay)
                 "Direction" -> {
-                    application.applicationContext.dataStore.edit { preferences ->
-                        preferences[DIRECTION_KEY] = direction
-                    }
+                    repository.saveDirection(direction)
                     setMegaParameters("Direction")
                 }
-
-                "Step Position" -> {
-                    application.applicationContext.dataStore.edit { preferences ->
-                        preferences[STEP_POSITION_KEY] = stepPosition
-                    }
-                }
-
-                "Min Step Position" -> {
-                    application.applicationContext.dataStore.edit { preferences ->
-                        preferences[MIN_STEP_POSITION_KEY] = minStepPosition
-                    }
-                }
-
-                "Max Step Position" -> {
-                    application.applicationContext.dataStore.edit { preferences ->
-                        preferences[MAX_STEP_POSITION_KEY] = maxStepPosition
-                    }
-                }
-
-                "8ft Stop Head" -> {
-                    application.applicationContext.dataStore.edit { preferences ->
-                        preferences[EIGHT_FT_STOP_HEAD_KEY] = eightFtStopHead
-                    }
-                }
-
-                "10ft Stop Head" -> {
-                    application.applicationContext.dataStore.edit { preferences ->
-                        preferences[TEN_FT_STOP_HEAD_KEY] = tenFtStopHead
-                    }
-                }
-
-                "6ft Stop Head" -> {
-                    application.applicationContext.dataStore.edit { preferences ->
-                        preferences[SIX_FT_STOP_HEAD_KEY] = sixFtStopHead
-                    }
-                }
-
-                "Steps/Inch" -> {
-                    application.applicationContext.dataStore.edit { preferences ->
-                        preferences[STEPS_PER_INCH_KEY] = stepsPerInch
-                    }
-                }
-
-                "Stop Head" -> {
-                    application.applicationContext.dataStore.edit { preferences ->
-                        preferences[STOP_HEAD_KEY] = stopHead
-                    }
-                }
-
-                "Table Length" -> {
-                    application.applicationContext.dataStore.edit { preferences ->
-                        preferences[TABLE_LENGTH_KEY] = tableLength
-                    }
-                }
+                "Step Position" -> repository.saveStepPosition(stepPosition)
+                "Min Step Position" -> repository.saveMinStepPosition(minStepPosition)
+                "Max Step Position" -> repository.saveMaxStepPosition(maxStepPosition)
+                "8ft Stop Head" -> repository.saveEightFtStopHead(eightFtStopHead)
+                "10ft Stop Head" -> repository.saveTenFtStopHead(tenFtStopHead)
+                "6ft Stop Head" -> repository.saveSixFtStopHead(sixFtStopHead)
+                "Steps/Inch" -> repository.saveStepsPerInch(stepsPerInch)
+                "Stop Head" -> repository.saveStopHead(stopHead)
+                "Table Length" -> repository.saveTableLength(tableLength)
             }
         }
     }

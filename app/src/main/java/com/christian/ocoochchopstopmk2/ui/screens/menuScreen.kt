@@ -1,5 +1,6 @@
 package com.christian.ocoochchopstopmk2.ui.screens
 
+import android.annotation.SuppressLint
 import android.content.res.Configuration
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
@@ -30,6 +31,7 @@ import com.christian.ocoochchopstopmk2.ui.util.ocoochCard
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
+@SuppressLint("ComposableNaming")
 @Composable
 fun menuScreen(chop: ChopStopViewModel) {
     val navController = rememberNavController()
@@ -69,6 +71,7 @@ fun menuScreen(chop: ChopStopViewModel) {
     )
 }
 
+@SuppressLint("ComposableNaming")
 @Composable
 fun drawerContent(
     navController: NavHostController,
@@ -79,7 +82,7 @@ fun drawerContent(
     val isPortrait = LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT
     val width = if (isPortrait) 128.dp else 192.dp
     val widthOffset = if (isPortrait) 16.dp else 8.dp
-    var stopHeadBoxHeight = if (isPortrait) 200.dp else 80.dp
+    val stopHeadBoxHeight = if (isPortrait) 200.dp else 80.dp
 
     Column(
         modifier = Modifier
