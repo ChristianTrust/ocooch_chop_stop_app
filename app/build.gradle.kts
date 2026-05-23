@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -62,4 +64,54 @@ dependencies {
 //    debugImplementation("androidx.compose.ui:ui-tooling")
 //    debugImplementation("androidx.compose.ui:ui-test-manifest")
 //    testImplementation(kotlin("test"))
+}
+
+tasks.register("uploadApkToServer") {
+    group = "publishing"
+    description = "Builds the debug APK and copies it to the self-hosted server over SCP"
+
+    dependsOn("assembleDebug")
+
+    doLast {
+        val properties = Properties()
+        val localPropertiesFile = project.rootProject.file("local.properties")
+        if (localPropertiesFile.exists()) {
+            localPropertiesFile.inputStream().use { stream ->
+                properties.load(stream)
+            }
+        }
+
+        val host = properties.getProperty("server.ssh.host") ?: ""
+        val user = properties.getProperty("server.ssh.user") ?: ""
+        val remotePath = properties.getProperty("server.ssh.path") ?: ""
+        val destFilename = properties.getProperty("server.ssh.filename") ?: "app-debug.apk"
+
+        if (host.isEmpty() || user.isEmpty() || remotePath.isEmpty()) {
+            throw GradleException("SSH credentials/path are not properly set in local.properties")
+        }
+
+        val apkFile = layout.buildDirectory.file("outputs/apk/debug/app-debug.apk").get().asFile
+
+        if (apkFile.exists()) {
+            val safeRemotePath = if (remotePath.endsWith("/")) remotePath else "$remotePath/"
+            val fullRemoteDestination = "$safeRemotePath$destFilename"
+
+            println("Copying ${apkFile.name} to $user@$host:$fullRemoteDestination...")
+
+            val process = ProcessBuilder(
+                "scp",
+                apkFile.absolutePath,
+                "$user@$host:$fullRemoteDestination"
+            ).inheritIO().start()
+
+            val exitCode = process.waitFor()
+            if (exitCode == 0) {
+                println("APK successfully copied via SCP as '$destFilename'!")
+            } else {
+                throw GradleException("SCP transfer failed with exit code $exitCode")
+            }
+        } else {
+            throw GradleException("APK file not found at ${apkFile.absolutePath}")
+        }
+    }
 }
