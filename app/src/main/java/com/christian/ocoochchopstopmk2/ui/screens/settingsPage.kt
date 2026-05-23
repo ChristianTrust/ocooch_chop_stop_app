@@ -1,5 +1,6 @@
 package com.christian.ocoochchopstopmk2.ui.screens
 
+import android.annotation.SuppressLint
 import android.content.res.Configuration
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -33,6 +34,7 @@ import com.christian.ocoochchopstopmk2.ui.util.dropDownIcons
 import com.christian.ocoochchopstopmk2.ui.util.ocoochCard
 import com.christian.ocoochchopstopmk2.ui.viewmodel.ChopStopViewModel
 
+@SuppressLint("ComposableNaming")
 @Composable
 fun settingsPage(
     chop: ChopStopViewModel,
@@ -44,7 +46,7 @@ fun settingsPage(
     val density = LocalDensity.current
 
     var terminalWeight = if (isPortrait) 2f else 1f
-    var anchorWidth by remember { mutableStateOf(0f) }
+    var anchorWidth by remember { mutableFloatStateOf(0f) }
 
     var inputMove by remember { mutableStateOf("") }
     var inputSpeed by remember { mutableStateOf("") }
@@ -58,7 +60,9 @@ fun settingsPage(
     var selectedDefault by remember { mutableStateOf("") }
     var inputNumberDefault by remember { mutableStateOf("") }
     var isDefaultDouble by remember { mutableStateOf(false) }
-    var terminalScrollToEnd by remember { mutableStateOf(0) }
+    var isFirstDefaultKeypress by remember { mutableStateOf(false) }
+    var isFirstMoveKeypress by remember { mutableStateOf(false) }
+    var terminalScrollToEnd by remember { mutableIntStateOf(0) }
 
     val defaultValues = listOf(
         Pair("Speed", chop.speed),
@@ -171,7 +175,7 @@ fun settingsPage(
                 ) {
                     terminalView(chop, Modifier.weight(1f), terminalScrollToEnd)
 
-                    if (selectedDefault != "" || selectedMoveInput == true) {
+                    if (selectedDefault != "" || selectedMoveInput) {
 
                         val isTableLength = selectedDefault == "Table Length"
 
@@ -184,7 +188,15 @@ fun settingsPage(
                             if (selectedMoveInput) {
                                 numpad(
                                     onClick = {
-                                        inputNumber = addToDefaultInputNumber(it, inputNumber, false)
+                                        if (isFirstMoveKeypress && it != "backspace" && it != "clear") {
+                                            isFirstMoveKeypress = false
+                                            inputNumber = if (it == ".") "0." else it
+                                        } else {
+                                            if (isFirstMoveKeypress) {
+                                                isFirstMoveKeypress = false
+                                            }
+                                            inputNumber = addToDefaultInputNumber(it, inputNumber, false)
+                                        }
                                     },
                                     onConfirmClick = {
                                         selectedMoveInput = false
@@ -222,7 +234,19 @@ fun settingsPage(
                             } else {
                                 numpad(
                                     onClick = {
-                                        inputNumberDefault = addToDefaultInputNumber(it, inputNumberDefault, isDefaultDouble)
+                                        if (isFirstDefaultKeypress && it != "backspace" && it != "clear") {
+                                            isFirstDefaultKeypress = false
+                                            inputNumberDefault = if (it == ".") {
+                                                if (isDefaultDouble) "0." else ""
+                                            } else {
+                                                it
+                                            }
+                                        } else {
+                                            if (isFirstDefaultKeypress) {
+                                                isFirstDefaultKeypress = false
+                                            }
+                                            inputNumberDefault = addToDefaultInputNumber(it, inputNumberDefault, isDefaultDouble)
+                                        }
                                     },
                                     onConfirmClick = { applyAndCloseDefault(selectedDefault) },
                                     isDecimalEnabled = isDefaultDouble,
@@ -268,6 +292,7 @@ fun settingsPage(
                                         onClick = {
                                             defaultExpanded = !defaultExpanded
                                             selectedDefault = ""
+                                            isFirstDefaultKeypress = false
                                         },
                                         modifier = Modifier
                                             .padding(start = 4.dp, end = 4.dp)
@@ -310,7 +335,11 @@ fun settingsPage(
                                                 } else if (selectedDefault != key) {
                                                     selectedDefault = key
                                                     inputNumberDefault = value.toString()
-                                                } else selectedDefault = ""
+                                                    isFirstDefaultKeypress = true
+                                                } else {
+                                                    selectedDefault = ""
+                                                    isFirstDefaultKeypress = false
+                                                }
                                             },
                                             modifier = Modifier
                                                 .padding(start = 4.dp, end = 4.dp)
@@ -363,6 +392,7 @@ fun settingsPage(
                                             onClick = {
                                                 chop.resetDefault(selectedDefault)
                                                 selectedDefault = ""
+                                                isFirstDefaultKeypress = false
                                             },
                                             modifier = Modifier
                                                 .padding(start = 4.dp, end = 4.dp)
@@ -391,6 +421,8 @@ fun settingsPage(
                                             defaultExpanded = !defaultExpanded
                                             selectedDefault = ""
                                             selectedMoveInput = false
+                                            isFirstDefaultKeypress = false
+                                            isFirstMoveKeypress = false
                                         },
                                         modifier = Modifier.weight(1f).fillMaxSize(),
                                         colors = listOf(
@@ -602,6 +634,9 @@ fun settingsPage(
                                                     .fillMaxSize()
                                                     .clickable {
                                                         selectedMoveInput = !selectedMoveInput
+                                                        if (selectedMoveInput) {
+                                                            isFirstMoveKeypress = true
+                                                        }
                                                         terminalScrollToEnd++
                                                     },
                                                 verticalAlignment = Alignment.CenterVertically,
