@@ -30,6 +30,10 @@ class ChopStopRepository(private val context: Context) {
 
         private val STOP_HEAD_KEY = stringPreferencesKey("stop_head")
         private val TABLE_LENGTH_KEY = stringPreferencesKey("table_length")
+
+        private val DEVICE_ID_KEY = stringPreferencesKey("device_id")
+        private val BASIC_AUTH_USERNAME_KEY = stringPreferencesKey("basic_auth_username")
+        private val BASIC_AUTH_PASSWORD_KEY = stringPreferencesKey("basic_auth_password")
     }
 
     // Settings Flows
@@ -52,6 +56,10 @@ class ChopStopRepository(private val context: Context) {
     val stopHeadFlow: Flow<String> = context.dataStore.data.map { it[STOP_HEAD_KEY] ?: "8ft" }
     val tableLengthFlow: Flow<String> = context.dataStore.data.map { it[TABLE_LENGTH_KEY] ?: "8ft" }
 
+    val deviceIdFlow: Flow<String> = context.dataStore.data.map { it[DEVICE_ID_KEY] ?: "" }
+    val basicAuthUsernameFlow: Flow<String> = context.dataStore.data.map { it[BASIC_AUTH_USERNAME_KEY] ?: "" }
+    val basicAuthPasswordFlow: Flow<String> = context.dataStore.data.map { it[BASIC_AUTH_PASSWORD_KEY] ?: "" }
+
     // Save helpers
     suspend fun saveSpeed(value: Int) = context.dataStore.edit { it[SPEED_KEY] = value }
     suspend fun saveAccel(value: Int) = context.dataStore.edit { it[ACCEL_KEY] = value }
@@ -68,6 +76,10 @@ class ChopStopRepository(private val context: Context) {
     suspend fun saveStopHead(value: String) = context.dataStore.edit { it[STOP_HEAD_KEY] = value }
     suspend fun saveTableLength(value: String) = context.dataStore.edit { it[TABLE_LENGTH_KEY] = value }
 
+    suspend fun saveDeviceId(value: String) = context.dataStore.edit { it[DEVICE_ID_KEY] = value }
+    suspend fun saveBasicAuthUsername(value: String) = context.dataStore.edit { it[BASIC_AUTH_USERNAME_KEY] = value }
+    suspend fun saveBasicAuthPassword(value: String) = context.dataStore.edit { it[BASIC_AUTH_PASSWORD_KEY] = value }
+
     // Reset helpers
     suspend fun resetSpeed() = context.dataStore.edit { it.remove(SPEED_KEY) }
     suspend fun resetAccel() = context.dataStore.edit { it.remove(ACCEL_KEY) }
@@ -83,3 +95,28 @@ class ChopStopRepository(private val context: Context) {
     suspend fun resetStepsPerInch() = context.dataStore.edit { it.remove(STEPS_PER_INCH_KEY) }
     suspend fun resetTableLength() = context.dataStore.edit { it.remove(TABLE_LENGTH_KEY) }
 }
+
+//data class ChopstopSettings(
+//    val deviceId: String,
+//    val deviceName: String,
+//    val version: Int = 1,
+
+//    val speed: Int,
+//    val acceleration: Int,
+//    val maxDelay: Int,
+//    val minDelay: Int,
+//    val direction: String, // "RIGHT" or "LEFT"
+//    val stepPosition: Int,
+//    val minStepPosition: Int,
+//    val maxStepPosition: Int,
+//    val eightFtStopHead: Double,
+//    val tenFtStopHead: Double,
+//    val sixFtStopHead: Double,
+//    val stepsPerInch: Double,
+//    val stopHead: String,
+//    val tableLength: String
+//)
+
+
+// post https://admin.ocoochhardwoods.com/api/chopstop/backup
+// get https://admin.ocoochhardwoods.com/api/chopstop/backup/:device_id

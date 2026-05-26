@@ -26,6 +26,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.Credentials
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 import java.math.BigDecimal
 import java.math.RoundingMode
 import kotlin.math.round
@@ -59,6 +65,10 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     val stopHeadFlow: Flow<String> = repository.stopHeadFlow
     val tableLengthFlow: Flow<String> = repository.tableLengthFlow
 
+    val deviceIdFlow: Flow<String> = repository.deviceIdFlow
+    val basicAuthUsernameFlow: Flow<String> = repository.basicAuthUsernameFlow
+    val basicAuthPasswordFlow: Flow<String> = repository.basicAuthPasswordFlow
+
     var speed: Int by mutableIntStateOf(0)
     var accel: Int by mutableIntStateOf(0)
     var maxDelay: Int by mutableIntStateOf(0)
@@ -72,6 +82,10 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     var eightFtStopHead: Double by mutableDoubleStateOf(0.0)
     var tenFtStopHead: Double by mutableDoubleStateOf(0.0)
     var sixFtStopHead: Double by mutableDoubleStateOf(0.0)
+
+    var deviceId: String by mutableStateOf("")
+    var basicAuthUsername: String by mutableStateOf("")
+    var basicAuthPassword: String by mutableStateOf("")
 
     var stepsPerInch: Double by mutableDoubleStateOf(1775.36)
 
@@ -177,6 +191,10 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
 
         viewModelScope.launch { stopHeadFlow.collect { stopHeadValue -> stopHead = stopHeadValue } }
         viewModelScope.launch { tableLengthFlow.collect { tableLengthValue -> tableLength = tableLengthValue } }
+
+        viewModelScope.launch { deviceIdFlow.collect { deviceId = it } }
+        viewModelScope.launch { basicAuthUsernameFlow.collect { basicAuthUsername = it } }
+        viewModelScope.launch { basicAuthPasswordFlow.collect { basicAuthPassword = it } }
 
         setupUsbPermissionReceiver()
         // Register for USB events
@@ -835,6 +853,167 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     fun clearTerminal() {
         if (terminalText.value.isNotEmpty()) {
             terminalText.value = emptyList()
+        }
+    }
+
+    fun backupSettings(
+        deviceIdInput: String,
+        usernameInput: String,
+        passwordInput: String,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            repository.saveDeviceId(deviceIdInput)
+            repository.saveBasicAuthUsername(usernameInput)
+            repository.saveBasicAuthPassword(passwordInput)
+
+            val settingsJson = JSONObject().apply {
+                put("speed", speed)
+                put("accel", accel)
+                put("max_delay", maxDelay)
+                put("min_delay", minDelay)
+                put("direction", direction)
+                put("step_position", stepPosition)
+                put("min_step_position", minStepPosition)
+                put("max_step_position", maxStepPosition)
+                put("8ft_stop_head", eightFtStopHead)
+                put("10ft_stop_head", tenFtStopHead)
+                put("6ft_stop_head", sixFtStopHead)
+                put("steps_per_inch", stepsPerInch)
+                put("stop_head", stopHead)
+                put("table_length", tableLength)
+            }
+
+            val requestBodyJson = JSONObject().apply {
+                put("device_id", deviceIdInput)
+                put("device_name", deviceIdInput)
+                put("version", 1)
+                put("settings", settingsJson)
+            }
+
+            withContext(Dispatchers.IO) {
+                try {
+                    val client = OkHttpClient()
+                    val mediaType = "application/json; charset=utf-8".toMediaType()
+                    val body = requestBodyJson.toString().toRequestBody(mediaType)
+
+                    val credential = Credentials.basic(usernameInput, passwordInput)
+                    val request = Request.Builder()
+                        .url("https://admin.ocoochhardwoods.com/api/chopstop/backup")
+                        .post(body)
+                        .header("Authorization", credential)
+                        .build()
+
+                    client.newCall(request).execute().use { response ->
+                        if (response.isSuccessful) {
+                            withContext(Dispatchers.Main) {
+                                logToTerminal("Settings backup successful", "[INFO]")
+                                onSuccess()
+                            }
+                        } else {
+                            val errMsg = "HTTP ${response.code}: ${response.message}"
+                            withContext(Dispatchers.Main) {
+                                logToTerminal("Backup failed: $errMsg", "[ERR]")
+                                onFailure(errMsg)
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    val errMsg = e.localizedMessage ?: "Unknown error"
+                    withContext(Dispatchers.Main) {
+                        logToTerminal("Backup error: $errMsg", "[ERR]")
+                        onFailure(errMsg)
+                    }
+                }
+            }
+        }
+    }
+
+    fun restoreSettings(
+        deviceIdInput: String,
+        usernameInput: String,
+        passwordInput: String,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            repository.saveDeviceId(deviceIdInput)
+            repository.saveBasicAuthUsername(usernameInput)
+            repository.saveBasicAuthPassword(passwordInput)
+
+            withContext(Dispatchers.IO) {
+                try {
+                    val client = OkHttpClient()
+                    val credential = Credentials.basic(usernameInput, passwordInput)
+                    val request = Request.Builder()
+                        .url("https://admin.ocoochhardwoods.com/api/chopstop/backup/$deviceIdInput")
+                        .get()
+                        .header("Authorization", credential)
+                        .build()
+
+                    client.newCall(request).execute().use { response ->
+                        if (response.isSuccessful) {
+                            val responseBody = response.body?.string() ?: ""
+                            val settingsJson = JSONObject(responseBody)
+
+                            withContext(Dispatchers.Main) {
+                                if (settingsJson.has("speed")) speed = settingsJson.getInt("speed")
+                                if (settingsJson.has("accel")) accel = settingsJson.getInt("accel")
+                                if (settingsJson.has("max_delay")) maxDelay = settingsJson.getInt("max_delay")
+                                if (settingsJson.has("min_delay")) minDelay = settingsJson.getInt("min_delay")
+                                if (settingsJson.has("direction")) direction = settingsJson.getString("direction")
+                                if (settingsJson.has("step_position")) stepPosition = settingsJson.getInt("step_position")
+                                if (settingsJson.has("min_step_position")) minStepPosition = settingsJson.getInt("min_step_position")
+                                if (settingsJson.has("max_step_position")) maxStepPosition = settingsJson.getInt("max_step_position")
+                                if (settingsJson.has("8ft_stop_head")) eightFtStopHead = settingsJson.getDouble("8ft_stop_head")
+                                if (settingsJson.has("10ft_stop_head")) tenFtStopHead = settingsJson.getDouble("10ft_stop_head")
+                                if (settingsJson.has("6ft_stop_head")) sixFtStopHead = settingsJson.getDouble("6ft_stop_head")
+                                if (settingsJson.has("steps_per_inch")) stepsPerInch = settingsJson.getDouble("steps_per_inch")
+                                if (settingsJson.has("stop_head")) stopHead = settingsJson.getString("stop_head")
+                                if (settingsJson.has("table_length")) tableLength = settingsJson.getString("table_length")
+
+                                repository.saveSpeed(speed)
+                                repository.saveAccel(accel)
+                                repository.saveMaxDelay(maxDelay)
+                                repository.saveMinDelay(minDelay)
+                                repository.saveDirection(direction)
+                                repository.saveStepPosition(stepPosition)
+                                repository.saveMinStepPosition(minStepPosition)
+                                repository.saveMaxStepPosition(maxStepPosition)
+                                repository.saveEightFtStopHead(eightFtStopHead)
+                                repository.saveTenFtStopHead(tenFtStopHead)
+                                repository.saveSixFtStopHead(sixFtStopHead)
+                                repository.saveStepsPerInch(stepsPerInch)
+                                repository.saveStopHead(stopHead)
+                                repository.saveTableLength(tableLength)
+
+                                setMegaParameters("all")
+
+                                logToTerminal("Settings restored successfully", "[INFO]")
+                                onSuccess()
+                            }
+                        } else if (response.code == 404) {
+                            withContext(Dispatchers.Main) {
+                                logToTerminal("Restore failed: Device ID not found", "[ERR]")
+                                onFailure("Device ID not found")
+                            }
+                        } else {
+                            val errMsg = "HTTP ${response.code}: ${response.message}"
+                            withContext(Dispatchers.Main) {
+                                logToTerminal("Restore failed: $errMsg", "[ERR]")
+                                onFailure(errMsg)
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    val errMsg = e.localizedMessage ?: "Unknown error"
+                    withContext(Dispatchers.Main) {
+                        logToTerminal("Restore error: $errMsg", "[ERR]")
+                        onFailure(errMsg)
+                    }
+                }
+            }
         }
     }
 
