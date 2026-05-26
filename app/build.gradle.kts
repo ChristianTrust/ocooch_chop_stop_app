@@ -137,6 +137,7 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.1.7")
     implementation("com.github.mik3y:usb-serial-for-android:3.9.0")
     implementation("androidx.compose.foundation:foundation-layout:1.9.4")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 }
 
 tasks.register("uploadApkToServer") {
@@ -156,7 +157,7 @@ tasks.register("uploadApkToServer") {
 
         val host = properties.getProperty("server.ssh.host") ?: ""
         val user = properties.getProperty("server.ssh.user") ?: ""
-        val remotePath = properties.getProperty("server.ssh.path") ?: ""
+        val remotePath = properties.getProperty("server.ssh.downloads_path") ?: ""
         val destFilenameBase = properties.getProperty("server.ssh.filename") ?: "chop-stop"
         val maxBuildsStr = properties.getProperty("server.ssh.max_builds") ?: "5"
         val maxBuilds = maxBuildsStr.toIntOrNull() ?: 5
@@ -191,7 +192,7 @@ tasks.register("uploadApkToServer") {
                 // Clean up old builds on the server (keeping the newest 'maxBuilds' matches)
                 println("Cleaning up old builds on the server (keeping latest $maxBuilds)...")
                 val sshCleanupCommand = """
-                    cd '$remotePath' && files=$(ls -1 $filenamePrefix-*.apk 2>/dev/null | sort -V); count=$(echo "${'$'}files" | grep -v '^$' | wc -l); if [ "${'$'}count" -gt $maxBuilds ]; then delete_count=$((count - maxBuilds)); echo "${'$'}files" | head -n "${'$'}delete_count" | xargs rm -f; fi
+                    cd '$remotePath' && ls -1 "$filenamePrefix"-*.apk 2>/dev/null | sort -V -r | tail -n +${maxBuilds + 1} | xargs rm -f
                 """.trimIndent()
 
                 val sshProcess = ProcessBuilder(
