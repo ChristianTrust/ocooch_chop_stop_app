@@ -76,6 +76,30 @@ class ChopStopRepository(private val context: Context) {
     suspend fun saveStopHead(value: String) = context.dataStore.edit { it[STOP_HEAD_KEY] = value }
     suspend fun saveTableLength(value: String) = context.dataStore.edit { it[TABLE_LENGTH_KEY] = value }
 
+    suspend fun saveAllSettings(
+        speed: Int, accel: Int, maxDelay: Int, minDelay: Int,
+        direction: String, stepPosition: Int, minStepPosition: Int, maxStepPosition: Int,
+        eightFtStopHead: Double, tenFtStopHead: Double, sixFtStopHead: Double,
+        stepsPerInch: Double, stopHead: String, tableLength: String
+    ) {
+        context.dataStore.edit { prefs ->
+            prefs[SPEED_KEY] = speed
+            prefs[ACCEL_KEY] = accel
+            prefs[MAX_DELAY_KEY] = maxDelay
+            prefs[MIN_DELAY_KEY] = minDelay
+            prefs[DIRECTION_KEY] = direction
+            prefs[STEP_POSITION_KEY] = stepPosition
+            prefs[MIN_STEP_POSITION_KEY] = minStepPosition
+            prefs[MAX_STEP_POSITION_KEY] = maxStepPosition
+            prefs[EIGHT_FT_STOP_HEAD_KEY] = eightFtStopHead
+            prefs[TEN_FT_STOP_HEAD_KEY] = tenFtStopHead
+            prefs[SIX_FT_STOP_HEAD_KEY] = sixFtStopHead
+            prefs[STEPS_PER_INCH_KEY] = stepsPerInch
+            prefs[STOP_HEAD_KEY] = stopHead
+            prefs[TABLE_LENGTH_KEY] = tableLength
+        }
+    }
+
     suspend fun saveDeviceId(value: String) = context.dataStore.edit { it[DEVICE_ID_KEY] = value }
     suspend fun saveBasicAuthUsername(value: String) = context.dataStore.edit { it[BASIC_AUTH_USERNAME_KEY] = value }
     suspend fun saveBasicAuthPassword(value: String) = context.dataStore.edit { it[BASIC_AUTH_PASSWORD_KEY] = value }

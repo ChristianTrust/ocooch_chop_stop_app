@@ -955,38 +955,72 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                     client.newCall(request).execute().use { response ->
                         if (response.isSuccessful) {
                             val responseBody = response.body?.string() ?: ""
-                            val settingsJson = JSONObject(responseBody)
+                            val rootJson = JSONObject(responseBody)
+
+                            val settingsJson = if (rootJson.has("settings")) {
+                                val settingsValue = rootJson.get("settings")
+                                settingsValue as? JSONObject
+                                    ?: if (settingsValue is String) {
+                                        try {
+                                            JSONObject(settingsValue)
+                                        } catch (_: Exception) {
+                                            rootJson
+                                        }
+                                    } else {
+                                        rootJson
+                                    }
+                            } else {
+                                rootJson
+                            }
 
                             withContext(Dispatchers.Main) {
-                                if (settingsJson.has("speed")) speed = settingsJson.getInt("speed")
-                                if (settingsJson.has("accel")) accel = settingsJson.getInt("accel")
-                                if (settingsJson.has("max_delay")) maxDelay = settingsJson.getInt("max_delay")
-                                if (settingsJson.has("min_delay")) minDelay = settingsJson.getInt("min_delay")
-                                if (settingsJson.has("direction")) direction = settingsJson.getString("direction")
-                                if (settingsJson.has("step_position")) stepPosition = settingsJson.getInt("step_position")
-                                if (settingsJson.has("min_step_position")) minStepPosition = settingsJson.getInt("min_step_position")
-                                if (settingsJson.has("max_step_position")) maxStepPosition = settingsJson.getInt("max_step_position")
-                                if (settingsJson.has("8ft_stop_head")) eightFtStopHead = settingsJson.getDouble("8ft_stop_head")
-                                if (settingsJson.has("10ft_stop_head")) tenFtStopHead = settingsJson.getDouble("10ft_stop_head")
-                                if (settingsJson.has("6ft_stop_head")) sixFtStopHead = settingsJson.getDouble("6ft_stop_head")
-                                if (settingsJson.has("steps_per_inch")) stepsPerInch = settingsJson.getDouble("steps_per_inch")
-                                if (settingsJson.has("stop_head")) stopHead = settingsJson.getString("stop_head")
-                                if (settingsJson.has("table_length")) tableLength = settingsJson.getString("table_length")
+                                logToTerminal("Restoring settings...", "[INFO]")
+                                val newSpeed = if (settingsJson.has("speed")) settingsJson.getInt("speed") else speed
+                                val newAccel = if (settingsJson.has("accel")) settingsJson.getInt("accel") else accel
+                                val newMaxDelay = if (settingsJson.has("max_delay")) settingsJson.getInt("max_delay") else maxDelay
+                                val newMinDelay = if (settingsJson.has("min_delay")) settingsJson.getInt("min_delay") else minDelay
+                                val newDirection = if (settingsJson.has("direction")) settingsJson.getString("direction") else direction
+                                val newStepPosition = if (settingsJson.has("step_position")) settingsJson.getInt("step_position") else stepPosition
+                                val newMinStepPosition = if (settingsJson.has("min_step_position")) settingsJson.getInt("min_step_position") else minStepPosition
+                                val newMaxStepPosition = if (settingsJson.has("max_step_position")) settingsJson.getInt("max_step_position") else maxStepPosition
+                                val newEightFtStopHead = if (settingsJson.has("8ft_stop_head")) settingsJson.getDouble("8ft_stop_head") else eightFtStopHead
+                                val newTenFtStopHead = if (settingsJson.has("10ft_stop_head")) settingsJson.getDouble("10ft_stop_head") else tenFtStopHead
+                                val newSixFtStopHead = if (settingsJson.has("6ft_stop_head")) settingsJson.getDouble("6ft_stop_head") else sixFtStopHead
+                                val newStepsPerInch = if (settingsJson.has("steps_per_inch")) settingsJson.getDouble("steps_per_inch") else stepsPerInch
+                                val newStopHead = if (settingsJson.has("stop_head")) settingsJson.getString("stop_head") else stopHead
+                                val newTableLength = if (settingsJson.has("table_length")) settingsJson.getString("table_length") else tableLength
 
-                                repository.saveSpeed(speed)
-                                repository.saveAccel(accel)
-                                repository.saveMaxDelay(maxDelay)
-                                repository.saveMinDelay(minDelay)
-                                repository.saveDirection(direction)
-                                repository.saveStepPosition(stepPosition)
-                                repository.saveMinStepPosition(minStepPosition)
-                                repository.saveMaxStepPosition(maxStepPosition)
-                                repository.saveEightFtStopHead(eightFtStopHead)
-                                repository.saveTenFtStopHead(tenFtStopHead)
-                                repository.saveSixFtStopHead(sixFtStopHead)
-                                repository.saveStepsPerInch(stepsPerInch)
-                                repository.saveStopHead(stopHead)
-                                repository.saveTableLength(tableLength)
+                                speed = newSpeed
+                                accel = newAccel
+                                maxDelay = newMaxDelay
+                                minDelay = newMinDelay
+                                direction = newDirection
+                                stepPosition = newStepPosition
+                                minStepPosition = newMinStepPosition
+                                maxStepPosition = newMaxStepPosition
+                                eightFtStopHead = newEightFtStopHead
+                                tenFtStopHead = newTenFtStopHead
+                                sixFtStopHead = newSixFtStopHead
+                                stepsPerInch = newStepsPerInch
+                                stopHead = newStopHead
+                                tableLength = newTableLength
+
+                                repository.saveAllSettings(
+                                    speed = newSpeed,
+                                    accel = newAccel,
+                                    maxDelay = newMaxDelay,
+                                    minDelay = newMinDelay,
+                                    direction = newDirection,
+                                    stepPosition = newStepPosition,
+                                    minStepPosition = newMinStepPosition,
+                                    maxStepPosition = newMaxStepPosition,
+                                    eightFtStopHead = newEightFtStopHead,
+                                    tenFtStopHead = newTenFtStopHead,
+                                    sixFtStopHead = newSixFtStopHead,
+                                    stepsPerInch = newStepsPerInch,
+                                    stopHead = newStopHead,
+                                    tableLength = newTableLength
+                                )
 
                                 setMegaParameters("all")
 
