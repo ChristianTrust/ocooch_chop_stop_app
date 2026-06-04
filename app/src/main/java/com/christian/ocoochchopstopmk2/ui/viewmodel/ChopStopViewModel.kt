@@ -946,8 +946,14 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                 try {
                     val client = OkHttpClient()
                     val credential = Credentials.basic(usernameInput, passwordInput)
+                    val url = "https://admin.ocoochhardwoods.com"
+                        .toHttpUrl()
+                        .newBuilder()
+                        .addPathSegments("api/chopstop/backup")
+                        .addPathSegment(deviceIdInput)
+                        .build()
                     val request = Request.Builder()
-                        .url("https://admin.ocoochhardwoods.com/api/chopstop/backup/$deviceIdInput")
+                        .url(url)
                         .get()
                         .header("Authorization", credential)
                         .build()
