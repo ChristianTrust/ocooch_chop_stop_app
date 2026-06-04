@@ -1,5 +1,6 @@
 package com.christian.ocoochchopstopmk2.ui.elements
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,11 +12,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.christian.ocoochchopstopmk2.ui.theme.*
 import com.christian.ocoochchopstopmk2.ui.viewmodel.ChopStopViewModel
 
+@SuppressLint("ComposableNaming")
 @Composable
 fun terminalView(
     chop: ChopStopViewModel,
@@ -23,8 +27,8 @@ fun terminalView(
     scrollToEnd: Int = 0
 ) {
     val lazyListState = rememberLazyListState()
-    var terminalTextColor = ocoochOrange80
-    var terminalTextWeight = MaterialTheme.typography.bodySmall.fontWeight
+    var terminalTextColor: Color
+    var terminalTextWeight: FontWeight?
 
     LaunchedEffect(chop.terminalText.value, scrollToEnd) {
         if (chop.terminalText.value.isNotEmpty()) {

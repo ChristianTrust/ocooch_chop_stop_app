@@ -1,5 +1,6 @@
 package com.christian.ocoochchopstopmk2.ui.elements
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,6 +24,7 @@ import com.christian.ocoochchopstopmk2.ui.util.ocoochCard
 import com.christian.ocoochchopstopmk2.ui.viewmodel.ChopStopViewModel
 import kotlinx.coroutines.delay
 
+@SuppressLint("ComposableNaming")
 @Composable
 fun distanceDisplay(
     modifier: Modifier = Modifier,

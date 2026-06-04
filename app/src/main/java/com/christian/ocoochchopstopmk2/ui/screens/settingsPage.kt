@@ -1,5 +1,6 @@
 package com.christian.ocoochchopstopmk2.ui.screens
 
+import android.annotation.SuppressLint
 import android.content.res.Configuration
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -23,6 +24,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.zIndex
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.christian.ocoochchopstopmk2.R.drawable.power_16
 import com.christian.ocoochchopstopmk2.ui.elements.distanceDisplay
 import com.christian.ocoochchopstopmk2.ui.elements.numpad
@@ -33,6 +40,7 @@ import com.christian.ocoochchopstopmk2.ui.util.dropDownIcons
 import com.christian.ocoochchopstopmk2.ui.util.ocoochCard
 import com.christian.ocoochchopstopmk2.ui.viewmodel.ChopStopViewModel
 
+@SuppressLint("ComposableNaming")
 @Composable
 fun settingsPage(
     chop: ChopStopViewModel,
@@ -44,7 +52,7 @@ fun settingsPage(
     val density = LocalDensity.current
 
     var terminalWeight = if (isPortrait) 2f else 1f
-    var anchorWidth by remember { mutableStateOf(0f) }
+    var anchorWidth by remember { mutableFloatStateOf(0f) }
 
     var inputMove by remember { mutableStateOf("") }
     var inputSpeed by remember { mutableStateOf("") }
@@ -58,7 +66,10 @@ fun settingsPage(
     var selectedDefault by remember { mutableStateOf("") }
     var inputNumberDefault by remember { mutableStateOf("") }
     var isDefaultDouble by remember { mutableStateOf(false) }
-    var terminalScrollToEnd by remember { mutableStateOf(0) }
+    var isFirstDefaultKeypress by remember { mutableStateOf(false) }
+    var isFirstMoveKeypress by remember { mutableStateOf(false) }
+    var terminalScrollToEnd by remember { mutableIntStateOf(0) }
+    var showBackupPopup by remember { mutableStateOf(false) }
 
     val defaultValues = listOf(
         Pair("Speed", chop.speed),
@@ -123,6 +134,12 @@ fun settingsPage(
         modifier = Modifier
             .fillMaxSize()
     ) {
+        cloudSyncPopup(
+            show = showBackupPopup,
+            chop = chop,
+            onDismiss = { showBackupPopup = false }
+        )
+
         if (maxWidth < 420.dp && isPortrait) terminalWeight = 1.75f
 
         Column(
@@ -171,7 +188,7 @@ fun settingsPage(
                 ) {
                     terminalView(chop, Modifier.weight(1f), terminalScrollToEnd)
 
-                    if (selectedDefault != "" || selectedMoveInput == true) {
+                    if (selectedDefault != "" || selectedMoveInput) {
 
                         val isTableLength = selectedDefault == "Table Length"
 
@@ -184,7 +201,15 @@ fun settingsPage(
                             if (selectedMoveInput) {
                                 numpad(
                                     onClick = {
-                                        inputNumber = addToDefaultInputNumber(it, inputNumber, false)
+                                        if (isFirstMoveKeypress && it != "backspace" && it != "clear") {
+                                            isFirstMoveKeypress = false
+                                            inputNumber = if (it == ".") "0." else it
+                                        } else {
+                                            if (isFirstMoveKeypress) {
+                                                isFirstMoveKeypress = false
+                                            }
+                                            inputNumber = addToDefaultInputNumber(it, inputNumber, false)
+                                        }
                                     },
                                     onConfirmClick = {
                                         selectedMoveInput = false
@@ -222,7 +247,19 @@ fun settingsPage(
                             } else {
                                 numpad(
                                     onClick = {
-                                        inputNumberDefault = addToDefaultInputNumber(it, inputNumberDefault, isDefaultDouble)
+                                        if (isFirstDefaultKeypress && it != "backspace" && it != "clear") {
+                                            isFirstDefaultKeypress = false
+                                            inputNumberDefault = if (it == ".") {
+                                                if (isDefaultDouble) "0." else ""
+                                            } else {
+                                                it
+                                            }
+                                        } else {
+                                            if (isFirstDefaultKeypress) {
+                                                isFirstDefaultKeypress = false
+                                            }
+                                            inputNumberDefault = addToDefaultInputNumber(it, inputNumberDefault, isDefaultDouble)
+                                        }
                                     },
                                     onConfirmClick = { applyAndCloseDefault(selectedDefault) },
                                     isDecimalEnabled = isDefaultDouble,
@@ -268,6 +305,7 @@ fun settingsPage(
                                         onClick = {
                                             defaultExpanded = !defaultExpanded
                                             selectedDefault = ""
+                                            isFirstDefaultKeypress = false
                                         },
                                         modifier = Modifier
                                             .padding(start = 4.dp, end = 4.dp)
@@ -310,7 +348,11 @@ fun settingsPage(
                                                 } else if (selectedDefault != key) {
                                                     selectedDefault = key
                                                     inputNumberDefault = value.toString()
-                                                } else selectedDefault = ""
+                                                    isFirstDefaultKeypress = true
+                                                } else {
+                                                    selectedDefault = ""
+                                                    isFirstDefaultKeypress = false
+                                                }
                                             },
                                             modifier = Modifier
                                                 .padding(start = 4.dp, end = 4.dp)
@@ -363,6 +405,7 @@ fun settingsPage(
                                             onClick = {
                                                 chop.resetDefault(selectedDefault)
                                                 selectedDefault = ""
+                                                isFirstDefaultKeypress = false
                                             },
                                             modifier = Modifier
                                                 .padding(start = 4.dp, end = 4.dp)
@@ -381,16 +424,14 @@ fun settingsPage(
 
                                 columnOrRow(useColumn = isPortrait, modifier = Modifier.weight(1f), content = {
 
-                                    if (!isPortrait) {
-                                        Spacer(modifier = Modifier.weight(0.55f))
-                                    }
-
                                     // Dropdown Menu for default values
                                     ocoochCard(
                                         onClick = {
                                             defaultExpanded = !defaultExpanded
                                             selectedDefault = ""
                                             selectedMoveInput = false
+                                            isFirstDefaultKeypress = false
+                                            isFirstMoveKeypress = false
                                         },
                                         modifier = Modifier.weight(1f).fillMaxSize(),
                                         colors = listOf(
@@ -419,11 +460,20 @@ fun settingsPage(
                                         }
                                     }
 
-                                    if (!isPortrait) {
-                                        Spacer(modifier = Modifier.weight(0.55f))
-                                    } else {
-                                        Spacer(modifier = Modifier.weight(1f))
-                                    }
+                                    Spacer(modifier = Modifier.padding(4.dp))
+
+                                    ocoochCard(
+                                        text = "Cloud Backup",
+                                        onClick = {
+                                            showBackupPopup = true
+                                        },
+                                        modifier = Modifier.weight(1f).fillMaxSize(),
+                                        colors = listOf(
+                                            MaterialTheme.colorScheme.primaryContainer,
+                                            MaterialTheme.colorScheme.onPrimary
+                                        ),
+                                        fontSize = 16
+                                    )
                                 })
 
                                 columnOrRow(useColumn = isPortrait, modifier = Modifier.weight(1f), content = {
@@ -602,6 +652,9 @@ fun settingsPage(
                                                     .fillMaxSize()
                                                     .clickable {
                                                         selectedMoveInput = !selectedMoveInput
+                                                        if (selectedMoveInput) {
+                                                            isFirstMoveKeypress = true
+                                                        }
                                                         terminalScrollToEnd++
                                                     },
                                                 verticalAlignment = Alignment.CenterVertically,
@@ -655,3 +708,212 @@ fun settingsPage(
         }
     }
 }
+
+@SuppressLint("ComposableNaming")
+@Composable
+fun cloudSyncPopup(
+    show: Boolean,
+    chop: ChopStopViewModel,
+    onDismiss: () -> Unit
+) {
+    if (show) {
+        var deviceIdInput by remember { mutableStateOf(chop.deviceId) }
+        var usernameInput by remember { mutableStateOf(chop.basicAuthUsername) }
+        var passwordInput by remember { mutableStateOf(chop.basicAuthPassword) }
+        var isLoading by remember { mutableStateOf(false) }
+        var statusMessage by remember { mutableStateOf("") }
+        var isSuccess by remember { mutableStateOf(false) }
+
+        LaunchedEffect(chop.deviceId, chop.basicAuthUsername, chop.basicAuthPassword) {
+            if (deviceIdInput.isEmpty()) deviceIdInput = chop.deviceId
+            if (usernameInput.isEmpty()) usernameInput = chop.basicAuthUsername
+            if (passwordInput.isEmpty()) passwordInput = chop.basicAuthPassword
+        }
+
+        Dialog(
+            onDismissRequest = { if (!isLoading) onDismiss() },
+            properties = DialogProperties(
+                usePlatformDefaultWidth = false,
+                decorFitsSystemWindows = false
+            )
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f))
+                    .imePadding()
+                    .clickable(enabled = !isLoading) { onDismiss() },
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .width(340.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainer)
+                        .clickable(enabled = false) {}
+                        .padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Cloud Sync Settings",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    OutlinedTextField(
+                        value = deviceIdInput,
+                        onValueChange = { deviceIdInput = it },
+                        label = { Text("Device ID") },
+                        singleLine = true,
+                        enabled = !isLoading,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                        )
+                    )
+
+                    OutlinedTextField(
+                        value = usernameInput,
+                        onValueChange = { usernameInput = it },
+                        label = { Text("Basic Auth Username") },
+                        singleLine = true,
+                        enabled = !isLoading,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                        )
+                    )
+
+                    OutlinedTextField(
+                        value = passwordInput,
+                        onValueChange = { passwordInput = it },
+                        label = { Text("Basic Auth Password") },
+                        singleLine = true,
+                        enabled = !isLoading,
+                        visualTransformation = PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                        )
+                    )
+
+                    if (statusMessage.isNotEmpty()) {
+                        Text(
+                            text = statusMessage,
+                            color = if (isSuccess) Color(0xFF2E7D32) else MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                    }
+
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(36.dp)
+                        )
+                    } else {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                ocoochCard(
+                                    text = "Backup",
+                                    onClick = {
+                                        if (deviceIdInput.isBlank()) {
+                                            statusMessage = "Device ID is required"
+                                            isSuccess = false
+                                            return@ocoochCard
+                                        }
+                                        isLoading = true
+                                        statusMessage = "Backing up..."
+                                        chop.backupSettings(
+                                            deviceIdInput = deviceIdInput.trim(),
+                                            usernameInput = usernameInput.trim(),
+                                            passwordInput = passwordInput.trim(),
+                                            onSuccess = {
+                                                isLoading = false
+                                                isSuccess = true
+                                                statusMessage = "Backup Successful!"
+                                            },
+                                            onFailure = { err ->
+                                                isLoading = false
+                                                isSuccess = false
+                                                statusMessage = "Failed: $err"
+                                            }
+                                        )
+                                    },
+                                    modifier = Modifier.weight(1f).height(48.dp),
+                                    fontSize = 16,
+                                    colors = listOf(
+                                        MaterialTheme.colorScheme.primary,
+                                        MaterialTheme.colorScheme.onPrimary
+                                    )
+                                )
+
+                                ocoochCard(
+                                    text = "Restore",
+                                    onClick = {
+                                        if (deviceIdInput.isBlank()) {
+                                            statusMessage = "Device ID is required"
+                                            isSuccess = false
+                                            return@ocoochCard
+                                        }
+                                        isLoading = true
+                                        statusMessage = "Restoring..."
+                                        chop.restoreSettings(
+                                            deviceIdInput = deviceIdInput.trim(),
+                                            usernameInput = usernameInput.trim(),
+                                            passwordInput = passwordInput.trim(),
+                                            onSuccess = {
+                                                isLoading = false
+                                                isSuccess = true
+                                                statusMessage = "Restore Successful!"
+                                            },
+                                            onFailure = { err ->
+                                                isLoading = false
+                                                isSuccess = false
+                                                statusMessage = "Failed: $err"
+                                            }
+                                        )
+                                    },
+                                    modifier = Modifier.weight(1f).height(48.dp),
+                                    fontSize = 16,
+                                    colors = listOf(
+                                        MaterialTheme.colorScheme.primary,
+                                        MaterialTheme.colorScheme.onPrimary
+                                    )
+                                )
+                            }
+
+                            ocoochCard(
+                                text = "Close",
+                                onClick = { onDismiss() },
+                                modifier = Modifier.fillMaxWidth().height(48.dp),
+                                fontSize = 16,
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.surfaceVariant,
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+

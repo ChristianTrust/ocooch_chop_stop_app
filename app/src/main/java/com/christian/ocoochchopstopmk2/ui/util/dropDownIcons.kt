@@ -1,5 +1,6 @@
 package com.christian.ocoochchopstopmk2.ui.util
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -13,6 +14,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
+@SuppressLint("ComposableNaming")
 @Composable
 fun dropDownIcons(
     faceDown: Boolean,

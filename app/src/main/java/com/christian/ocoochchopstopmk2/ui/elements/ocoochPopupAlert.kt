@@ -1,5 +1,6 @@
 package com.christian.ocoochchopstopmk2.ui.elements
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -19,6 +20,7 @@ import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.christian.ocoochchopstopmk2.ui.util.ocoochCard
 
+@SuppressLint("ComposableNaming")
 @Composable
 fun ocoochPopupAlert(
     show: Boolean,

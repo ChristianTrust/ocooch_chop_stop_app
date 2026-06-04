@@ -1,5 +1,6 @@
 package com.christian.ocoochchopstopmk2.ui.screens
 
+import android.annotation.SuppressLint
 import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -42,6 +43,7 @@ import com.christian.ocoochchopstopmk2.ui.util.columnOrRow
 import com.christian.ocoochchopstopmk2.ui.util.ocoochCard
 import com.christian.ocoochchopstopmk2.ui.viewmodel.ChopStopViewModel
 
+@SuppressLint("ComposableNaming")
 @Composable
 fun homePage(
     chop: ChopStopViewModel,

@@ -1,11 +1,13 @@
 package com.christian.ocoochchopstopmk2.ui.util
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 
+@SuppressLint("ComposableNaming")
 @Composable
 fun columnOrRow(
     useColumn: Boolean,
