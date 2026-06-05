@@ -30,10 +30,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import com.christian.ocoochchopstopmk2.R.drawable.block12
+import com.christian.ocoochchopstopmk2.R.drawable.block20
 import com.christian.ocoochchopstopmk2.R.drawable.power_16
 import com.christian.ocoochchopstopmk2.ui.elements.distanceDisplay
 import com.christian.ocoochchopstopmk2.ui.elements.numpad
@@ -64,8 +68,10 @@ fun homePage(
             .windowInsetsPadding(WindowInsets.safeContent),
         contentAlignment = if (isPortrait) Alignment.BottomCenter else Alignment.BottomEnd,
     ) {
+        val blocksBarHeight = if (isPortrait) maxHeight / 10 else maxHeight / 6
         val buttonBoxWidth = if (isPortrait) maxWidth else maxWidth / 2
-        val buttonBoxHeight = if (isPortrait) maxHeight / 2 else maxHeight
+        val numpadHeight = if (isPortrait) (maxHeight / 2f) + (blocksBarHeight / 3) else maxHeight
+        val buttonBoxHeight = if (isPortrait) (maxHeight / 2f) - (blocksBarHeight / 3) else maxHeight
         val goButtonWidth = if (isPortrait) maxWidth / 4 else buttonBoxWidth / 4 - 4.dp
 
         columnOrRow(useColumn = isPortrait, modifier = Modifier.fillMaxSize(), content = {
@@ -80,7 +86,7 @@ fun homePage(
             Column(
                 modifier = Modifier
                     .width(buttonBoxWidth)
-                    .height(buttonBoxHeight),
+                    .height(numpadHeight),
                 verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -144,19 +150,68 @@ fun homePage(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(padding))
+                // blocks bar
+                Row(
+                    modifier = Modifier
+                        .width(buttonBoxWidth)
+                        .height(blocksBarHeight)
+                        .padding(start = padding, end = padding, top = padding * 2, bottom = padding / 2),
+                    horizontalArrangement = Arrangement.spacedBy(padding),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val activeColors = listOf(MaterialTheme.colorScheme.tertiaryContainer, MaterialTheme.colorScheme.onTertiary)
+                    val inactiveColors = listOf(MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.onSecondary)
+                    val is12 = chop.activeBlockState == ChopStopViewModel.BlockState.TWELVE
+                    val is20 = chop.activeBlockState == ChopStopViewModel.BlockState.TWENTY
+
+                    ocoochCard(
+                        icon = ImageVector.vectorResource(id = block12),
+                        onClick = {
+                            if (is12) {
+                                chop.activeBlockState = ChopStopViewModel.BlockState.NONE
+                            } else {
+                                chop.activeBlockState = ChopStopViewModel.BlockState.TWELVE
+                            }
+                        },
+                        modifier = Modifier.width(buttonBoxWidth / 2.5f - padding),
+                        colors = if (is12) activeColors else inactiveColors,
+                        fontSize = 90
+                    )
+
+                    ocoochCard(
+                        icon = ImageVector.vectorResource(id = block20),
+                        onClick = {
+                            if (is20) {
+                                chop.activeBlockState = ChopStopViewModel.BlockState.NONE
+                            } else {
+                                chop.activeBlockState = ChopStopViewModel.BlockState.TWENTY
+                            }
+                        },
+                        modifier = Modifier.width(buttonBoxWidth / 2.5f - padding),
+                        colors = if (is20) activeColors else inactiveColors,
+                        fontSize = 90
+                    )
+
+                    ocoochCard(
+                        text = "X",
+                        onClick = { chop.activeBlockState = ChopStopViewModel.BlockState.NONE },
+                        modifier = Modifier.width(buttonBoxWidth / 5 - padding),
+                        colors = inactiveColors,
+                        fontSize = 28
+                    )
+                }
 
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(padding),
                     contentAlignment = Alignment.Center
                 ) {
                     numpad(
                         onClick = {
                             chop.inputNumber = addToMainInputNumber(it, chop.inputNumber, chop)
                         },
-                        modifier = Modifier.padding(top = 8.dp),
+                        modifier = Modifier,
                         isDecimalEnabled = true,
                         useConfirmButton = false
                     )

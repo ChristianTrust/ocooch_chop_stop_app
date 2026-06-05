@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.Credentials
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -116,6 +117,8 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     var errorMessage: String by mutableStateOf("")
 //    var connectionState by mutableIntStateOf(0)
 
+    var activeBlockState by mutableStateOf(BlockState.NONE)
+
     val terminalText: MutableState<List<String>> = mutableStateOf(listOf())
     val stepPositionText: MutableState<String> = mutableStateOf("")
     val lastSentLine: MutableState<String> = mutableStateOf("")
@@ -137,6 +140,12 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         CONNECTING,
         CONNECTED,
         ERROR
+    }
+
+    enum class BlockState(val value: Int) {
+        NONE(0),
+        TWELVE(12),
+        TWENTY(20)
     }
 
     private val usbBroadcastReceiver = object : BroadcastReceiver() {
@@ -208,7 +217,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
 
         unit = if (isInch) "INCH:" else "MM:"
         unitMarker = if (isInch) "\"" else "mm"
-        inchPosition = (stepPosition + getStopHeadSteps()) / stepsPerInch
+        inchPosition = calculateInchPosition()
 
         // Wait for parameters to be set
         confirmConnection(2)
@@ -276,18 +285,26 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
             else -> 0
         }
     }
+    
+    fun calculateInchPosition(): Double {
+        return ((stepPosition + getStopHeadSteps()) / stepsPerInch) - activeBlockState.value
+    }
 
     fun lengthError(steps: Int, error: Int) {
         val stopHeadSteps = getStopHeadSteps()
-        val inches = BigDecimal((stepPosition + stopHeadSteps + steps) / stepsPerInch)
+        val currentPosition = (stepPosition + stopHeadSteps + steps) / stepsPerInch - activeBlockState.value
+        val minPosition = (stopHeadSteps + minStepPosition) / stepsPerInch - activeBlockState.value
+        val maxPosition = (stopHeadSteps + maxStepPosition) / stepsPerInch - activeBlockState.value
+
+        val inches = BigDecimal(currentPosition)
             .setScale(3, RoundingMode.HALF_UP)
             .stripTrailingZeros()
             .toPlainString()
-        val minInches = BigDecimal((stopHeadSteps + minStepPosition) / stepsPerInch)
+        val minInches = BigDecimal(minPosition)
             .setScale(3, RoundingMode.HALF_UP)
             .stripTrailingZeros()
             .toPlainString()
-        val maxInches = BigDecimal((stopHeadSteps + maxStepPosition) / stepsPerInch)
+        val maxInches = BigDecimal(maxPosition)
             .setScale(3, RoundingMode.HALF_UP)
             .stripTrailingZeros()
             .toPlainString()
@@ -335,23 +352,29 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun goToPosition(unitType: String = this.unit, distance: Float = this.inputNumber.toFloat()) {
-        val stepsFromZero = if (unitType == "MM:") {
-            (distance * (stepsPerInch / 25.4)).toInt()
+        val physicalDistance = if (unitType == "MM:") {
+            distance + (activeBlockState.value * 25.4f)
         } else {
-            (distance * stepsPerInch).toInt()
+            distance + activeBlockState.value
+        }
+
+        val stepsFromZero = if (unitType == "MM:") {
+            (physicalDistance * (stepsPerInch / 25.4)).toInt()
+        } else {
+            (physicalDistance * stepsPerInch).toInt()
         }
         var stepsToGo = stepsFromZero - stepPosition
 
         if (unitType == "MM:") {
             if ((stepsFromZero / (stepsPerInch / 25.4)).let {
                     round(it * 1000) / 1000
-                } < distance) {
+                } < physicalDistance) {
                 stepsToGo++
             }
         } else {
             if ((stepsFromZero / stepsPerInch).let {
                     round(it * 1000) / 1000
-                } < distance) {
+                } < physicalDistance) {
                 stepsToGo++
             }
         }
@@ -436,7 +459,8 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun getCalibrationInput(): Double {
-        return calibrationInput.toDouble() - (stepPosition / stepsPerInch)
+        val inputInches = if (unit == "MM:") calibrationInput.toDouble() / 25.4 else calibrationInput.toDouble()
+        return inputInches + activeBlockState.value - (stepPosition / stepsPerInch)
     }
 
     fun recalibrate() {
@@ -838,7 +862,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun getDisplayPosition(): String {
-        inchPosition = (stepPosition + getStopHeadSteps()) / stepsPerInch
+        inchPosition = calculateInchPosition()
         return if (unit == "MM:") {
             "%.1f".format(inchPosition * 25.4)
         } else {
