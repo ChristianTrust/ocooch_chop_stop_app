@@ -172,7 +172,7 @@ fun homePage(
                                 chop.activeBlockState = ChopStopViewModel.BlockState.TWELVE
                             }
                         },
-                        modifier = Modifier.width(buttonBoxWidth / 2.5f - padding),
+                        modifier = Modifier.weight(1f),
                         colors = if (is12) activeColors else inactiveColors,
                         fontSize = 90
                     )
@@ -186,17 +186,9 @@ fun homePage(
                                 chop.activeBlockState = ChopStopViewModel.BlockState.TWENTY
                             }
                         },
-                        modifier = Modifier.width(buttonBoxWidth / 2.5f - padding),
+                        modifier = Modifier.weight(1f),
                         colors = if (is20) activeColors else inactiveColors,
                         fontSize = 90
-                    )
-
-                    ocoochCard(
-                        text = "X",
-                        onClick = { chop.activeBlockState = ChopStopViewModel.BlockState.NONE },
-                        modifier = Modifier.width(buttonBoxWidth / 5 - padding),
-                        colors = inactiveColors,
-                        fontSize = 28
                     )
                 }
 
