@@ -87,7 +87,8 @@ fun settingsPage(
         Pair("10ft Stop Head", chop.tenFtStopHead),
         Pair("6ft Stop Head", chop.sixFtStopHead),
 
-        Pair("Steps/Inch", chop.stepsPerInch)
+        Pair("Steps/Inch", chop.stepsPerInch),
+        Pair("Use Block", chop.useBlock)
     )
 //    val commands = listOf("MOVE:", "SPEED:", "ACCEL:", "MAX_DELAY:", "MIN_DELAY:", "HOME", "LOG", "POS")
     val commands = listOf("MOVE:", "X", "HOME", "LOG", "CONFIRM")
@@ -120,6 +121,7 @@ fun settingsPage(
             "6ft Stop Head" -> chop.sixFtStopHead = inputNumberDefault.toDouble()
 
             "Steps/Inch" -> chop.stepsPerInch = inputNumberDefault.toDouble()
+            "Use Block" -> chop.useBlock = inputNumberDefault.toBoolean()
         }
 
         chop.logToTerminal("$key set to $inputNumberDefault", "[INFO]")
@@ -345,6 +347,11 @@ fun settingsPage(
                                                     chop.direction = newDir
                                                     chop.logToTerminal("Direction set to $newDir", "[INFO]")
                                                     chop.saveSettings("Direction")
+                                                } else if (key == "Use Block") {
+                                                    val newUseBlock = !chop.useBlock
+                                                    chop.useBlock = newUseBlock
+                                                    chop.logToTerminal("Use Block set to $newUseBlock", "[INFO]")
+                                                    chop.saveSettings("Use Block")
                                                 } else if (selectedDefault != key) {
                                                     selectedDefault = key
                                                     inputNumberDefault = value.toString()
@@ -355,8 +362,8 @@ fun settingsPage(
                                                 }
                                             },
                                             modifier = Modifier
-                                                .padding(start = 4.dp, end = 4.dp)
-                                                .height(48.dp),
+                                                .padding(start = 4.dp, end = 4.dp),
+//                                                .height(48.dp),
                                             fontSize = 12,
                                             colors = listOf(
                                                 MaterialTheme.colorScheme.primary,

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -67,7 +68,7 @@ fun homePage(
             .windowInsetsPadding(WindowInsets.safeContent),
         contentAlignment = if (isPortrait) Alignment.BottomCenter else Alignment.BottomEnd,
     ) {
-        val blocksBarHeight = if (isPortrait) maxHeight / 10 else maxHeight / 6
+        val blocksBarHeight = if (!chop.useBlock) 0.dp else if (isPortrait) maxHeight / 10 else maxHeight / 6
         val buttonBoxWidth = if (isPortrait) maxWidth else maxWidth / 2
         val numpadHeight = if (isPortrait) (maxHeight / 2f) + (blocksBarHeight / 3) else maxHeight
         val buttonBoxHeight = if (isPortrait) (maxHeight / 2f) - (blocksBarHeight / 3) else maxHeight
@@ -150,46 +151,50 @@ fun homePage(
                 }
 
                 // blocks bar
-                Row(
-                    modifier = Modifier
-                        .width(buttonBoxWidth)
-                        .height(blocksBarHeight)
-                        .padding(start = padding, end = padding, top = padding * 2, bottom = padding / 2),
-                    horizontalArrangement = Arrangement.spacedBy(padding),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    val activeColors = listOf(MaterialTheme.colorScheme.tertiaryContainer, MaterialTheme.colorScheme.onTertiary)
-                    val inactiveColors = listOf(MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.onSecondary)
-                    val is12 = chop.activeBlockState == ChopStopViewModel.BlockState.TWELVE
-                    val is20 = chop.activeBlockState == ChopStopViewModel.BlockState.TWENTY
+                if (chop.useBlock) {
+                    Row(
+                        modifier = Modifier
+                            .width(buttonBoxWidth)
+                            .height(blocksBarHeight)
+                            .padding(start = padding, end = padding, top = padding * 2, bottom = padding / 2),
+                        horizontalArrangement = Arrangement.spacedBy(padding),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val activeColors = listOf(MaterialTheme.colorScheme.tertiaryContainer, MaterialTheme.colorScheme.onTertiary)
+                        val inactiveColors = listOf(MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.onSecondary)
+                        val is12 = chop.activeBlockState == ChopStopViewModel.BlockState.TWELVE
+                        val is20 = chop.activeBlockState == ChopStopViewModel.BlockState.TWENTY
 
-                    ocoochCard(
-                        icon = ImageVector.vectorResource(id = block12),
-                        onClick = {
-                            if (is12) {
-                                chop.activeBlockState = ChopStopViewModel.BlockState.NONE
-                            } else {
-                                chop.activeBlockState = ChopStopViewModel.BlockState.TWELVE
-                            }
-                        },
-                        modifier = Modifier.weight(1f),
-                        colors = if (is12) activeColors else inactiveColors,
-                        fontSize = 90
-                    )
+                        ocoochCard(
+                            icon = ImageVector.vectorResource(id = block12),
+                            onClick = {
+                                if (is12) {
+                                    chop.activeBlockState = ChopStopViewModel.BlockState.NONE
+                                } else {
+                                    chop.activeBlockState = ChopStopViewModel.BlockState.TWELVE
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = if (is12) activeColors else inactiveColors,
+                            fontSize = 90
+                        )
 
-                    ocoochCard(
-                        icon = ImageVector.vectorResource(id = block20),
-                        onClick = {
-                            if (is20) {
-                                chop.activeBlockState = ChopStopViewModel.BlockState.NONE
-                            } else {
-                                chop.activeBlockState = ChopStopViewModel.BlockState.TWENTY
-                            }
-                        },
-                        modifier = Modifier.weight(1f),
-                        colors = if (is20) activeColors else inactiveColors,
-                        fontSize = 90
-                    )
+                        ocoochCard(
+                            icon = ImageVector.vectorResource(id = block20),
+                            onClick = {
+                                if (is20) {
+                                    chop.activeBlockState = ChopStopViewModel.BlockState.NONE
+                                } else {
+                                    chop.activeBlockState = ChopStopViewModel.BlockState.TWENTY
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = if (is20) activeColors else inactiveColors,
+                            fontSize = 90
+                        )
+                    }
+                } else {
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
 
                 Box(

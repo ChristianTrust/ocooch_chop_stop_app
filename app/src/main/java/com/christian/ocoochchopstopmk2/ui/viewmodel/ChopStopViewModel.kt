@@ -65,6 +65,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
 
     val stopHeadFlow: Flow<String> = repository.stopHeadFlow
     val tableLengthFlow: Flow<String> = repository.tableLengthFlow
+    val useBlockFlow: Flow<Boolean> = repository.useBlockFlow
 
     val deviceIdFlow: Flow<String> = repository.deviceIdFlow
     val basicAuthUsernameFlow: Flow<String> = repository.basicAuthUsernameFlow
@@ -92,6 +93,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
 
     var stopHead: String by mutableStateOf("8ft")
     var tableLength: String by mutableStateOf("8ft")
+    var useBlock: Boolean by mutableStateOf(true)
 
     var inchPosition: Double by mutableDoubleStateOf(0.0)
     var parametersSet: Boolean by mutableStateOf(false)
@@ -200,6 +202,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
 
         viewModelScope.launch { stopHeadFlow.collect { stopHeadValue -> stopHead = stopHeadValue } }
         viewModelScope.launch { tableLengthFlow.collect { tableLengthValue -> tableLength = tableLengthValue } }
+        viewModelScope.launch { useBlockFlow.collect { useBlockValue -> useBlock = useBlockValue } }
 
         viewModelScope.launch { deviceIdFlow.collect { deviceId = it } }
         viewModelScope.launch { basicAuthUsernameFlow.collect { basicAuthUsername = it } }
@@ -249,6 +252,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                 "6ft Stop Head" -> repository.resetSixFtStopHead()
                 "Steps/Inch" -> repository.resetStepsPerInch()
                 "Table Length" -> repository.resetTableLength()
+                "Use Block" -> repository.resetUseBlock()
             }
         }
     }
@@ -273,6 +277,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                 "Steps/Inch" -> repository.saveStepsPerInch(stepsPerInch)
                 "Stop Head" -> repository.saveStopHead(stopHead)
                 "Table Length" -> repository.saveTableLength(tableLength)
+                "Use Block" -> repository.saveUseBlock(useBlock)
             }
         }
     }
@@ -352,36 +357,46 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun goToPosition(unitType: String = this.unit, distance: Float = this.inputNumber.toFloat()) {
-        val physicalDistance = if (unitType == "MM:") {
-            distance + (activeBlockState.value * 25.4f)
-        } else {
-            distance + activeBlockState.value
-        }
-
-        val stepsFromZero = if (unitType == "MM:") {
-            (physicalDistance * (stepsPerInch / 25.4)).toInt()
-        } else {
-            (physicalDistance * stepsPerInch).toInt()
-        }
-        var stepsToGo = stepsFromZero - stepPosition
-
-        if (unitType == "MM:") {
-            if ((stepsFromZero / (stepsPerInch / 25.4)).let {
-                    round(it * 1000) / 1000
-                } < physicalDistance) {
-                stepsToGo++
+        fun calculateSteps(blockValue: Int): Int {
+            val physicalDistance = if (unitType == "MM:") {
+                distance + (blockValue * 25.4f)
+            } else {
+                distance + blockValue
             }
-        } else {
-            if ((stepsFromZero / stepsPerInch).let {
-                    round(it * 1000) / 1000
-                } < physicalDistance) {
-                stepsToGo++
+
+            var sfz = if (unitType == "MM:") {
+                (physicalDistance * (stepsPerInch / 25.4)).toInt()
+            } else {
+                (physicalDistance * stepsPerInch).toInt()
+            }
+
+            if (unitType == "MM:") {
+                if ((sfz / (stepsPerInch / 25.4)).let { round(it * 1000) / 1000 } < physicalDistance) {
+                    sfz++
+                }
+            } else {
+                if ((sfz / stepsPerInch).let { round(it * 1000) / 1000 } < physicalDistance) {
+                    sfz++
+                }
+            }
+            return sfz
+        }
+
+        var targetStepsFromZero = calculateSteps(activeBlockState.value)
+
+        // Auto block logic
+        if (targetStepsFromZero - getStopHeadSteps() < minStepPosition && activeBlockState != BlockState.TWENTY) {
+            val stepsWithTwenty = calculateSteps(BlockState.TWENTY.value)
+            if (stepsWithTwenty - getStopHeadSteps() in minStepPosition..maxStepPosition
+            ) {
+                activeBlockState = BlockState.TWENTY
+                targetStepsFromZero = stepsWithTwenty
             }
         }
 
         // If moving, stop and move to a new position
         if (isMoving) {
-            newMovePosition = stepsFromZero
+            newMovePosition = targetStepsFromZero
 
             if (!isStopping) {
                 sendData("X") // Stop Command
@@ -390,6 +405,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                 sendData("CHECK")
             }
         } else {
+            val stepsToGo = targetStepsFromZero - stepPosition
             moveSteps(stepsToGo - getStopHeadSteps())
             clearInput()
         }
@@ -907,6 +923,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                 put("steps_per_inch", stepsPerInch)
                 put("stop_head", stopHead)
                 put("table_length", tableLength)
+                put("use_block", useBlock)
             }
 
             val requestBodyJson = JSONObject().apply {
@@ -1019,6 +1036,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                                 val newStepsPerInch = if (settingsJson.has("steps_per_inch")) settingsJson.getDouble("steps_per_inch") else stepsPerInch
                                 val newStopHead = if (settingsJson.has("stop_head")) settingsJson.getString("stop_head") else stopHead
                                 val newTableLength = if (settingsJson.has("table_length")) settingsJson.getString("table_length") else tableLength
+                                val newUseBlock = if (settingsJson.has("use_block")) settingsJson.getBoolean("use_block") else useBlock
 
                                 speed = newSpeed
                                 accel = newAccel
@@ -1034,6 +1052,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                                 stepsPerInch = newStepsPerInch
                                 stopHead = newStopHead
                                 tableLength = newTableLength
+                                useBlock = newUseBlock
 
                                 repository.saveAllSettings(
                                     speed = newSpeed,
@@ -1049,7 +1068,8 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                                     sixFtStopHead = newSixFtStopHead,
                                     stepsPerInch = newStepsPerInch,
                                     stopHead = newStopHead,
-                                    tableLength = newTableLength
+                                    tableLength = newTableLength,
+                                    useBlock = newUseBlock
                                 )
 
                                 setMegaParameters("all")
