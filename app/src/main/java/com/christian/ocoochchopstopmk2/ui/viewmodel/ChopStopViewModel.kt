@@ -32,6 +32,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
 import org.json.JSONObject
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -893,6 +894,51 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     fun clearTerminal() {
         if (terminalText.value.isNotEmpty()) {
             terminalText.value = emptyList()
+        }
+    }
+
+    fun fetchKnownIds(
+        usernameInput: String,
+        passwordInput: String,
+        onSuccess: (List<String>) -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                try {
+                    val client = OkHttpClient()
+                    val credential = Credentials.basic(usernameInput, passwordInput)
+                    val request = Request.Builder()
+                        .url("https://admin.ocoochhardwoods.com/api/chopstop/known_ids")
+                        .get()
+                        .header("Authorization", credential)
+                        .build()
+
+                    client.newCall(request).execute().use { response ->
+                        if (response.isSuccessful) {
+                            val body = response.body?.string() ?: "[]"
+                            val jsonArray = JSONArray(body)
+                            val idList = mutableListOf<String>()
+                            for (i in 0 until jsonArray.length()) {
+                                idList.add(jsonArray.getString(i))
+                            }
+                            withContext(Dispatchers.Main) {
+                                onSuccess(idList)
+                            }
+                        } else {
+                            val errMsg = "HTTP ${response.code}: ${response.message}"
+                            withContext(Dispatchers.Main) {
+                                onFailure(errMsg)
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    val errMsg = e.localizedMessage ?: "Unknown error"
+                    withContext(Dispatchers.Main) {
+                        onFailure(errMsg)
+                    }
+                }
+            }
         }
     }
 

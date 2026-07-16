@@ -40,6 +40,7 @@ fun menuScreen(chop: ChopStopViewModel) {
 
     ModalNavigationDrawer(
         drawerState = drawerState,
+        gesturesEnabled = drawerState.isOpen,
         drawerContent = {
             drawerContent(navController, drawerState, scope, chop)
         },

@@ -84,7 +84,7 @@ fun terminalView(
                     Text(
                         text = line,
                         style = MaterialTheme.typography.bodySmall.copy(
-                            lineHeight = 6.sp,
+                            lineHeight = 12.sp,
                             fontWeight = terminalTextWeight
                         ),
                         color = terminalTextColor

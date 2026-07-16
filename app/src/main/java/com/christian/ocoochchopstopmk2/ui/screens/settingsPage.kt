@@ -6,9 +6,13 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -731,10 +735,31 @@ fun cloudSyncPopup(
         var statusMessage by remember { mutableStateOf("") }
         var isSuccess by remember { mutableStateOf(false) }
 
+        var knownIds by remember { mutableStateOf<List<String>>(emptyList()) }
+        var isAddingNew by remember { mutableStateOf(false) }
+        var dropdownExpanded by remember { mutableStateOf(false) }
+
+        fun refreshKnownIds() {
+            if (usernameInput.isNotBlank() && passwordInput.isNotBlank()) {
+                chop.fetchKnownIds(
+                    usernameInput = usernameInput.trim(),
+                    passwordInput = passwordInput.trim(),
+                    onSuccess = { ids ->
+                        knownIds = ids
+                        if (deviceIdInput.isNotBlank() && !ids.contains(deviceIdInput)) {
+                            isAddingNew = true
+                        }
+                    },
+                    onFailure = { /* Silent failure for ID fetching */ }
+                )
+            }
+        }
+
         LaunchedEffect(chop.deviceId, chop.basicAuthUsername, chop.basicAuthPassword) {
             if (deviceIdInput.isEmpty()) deviceIdInput = chop.deviceId
             if (usernameInput.isEmpty()) usernameInput = chop.basicAuthUsername
             if (passwordInput.isEmpty()) passwordInput = chop.basicAuthPassword
+            refreshKnownIds()
         }
 
         Dialog(
@@ -772,22 +797,71 @@ fun cloudSyncPopup(
 
                     Spacer(modifier = Modifier.height(4.dp))
 
-                    OutlinedTextField(
-                        value = deviceIdInput,
-                        onValueChange = { deviceIdInput = it },
-                        label = { Text("Device ID") },
-                        singleLine = true,
-                        enabled = !isLoading,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        OutlinedTextField(
+                            value = if (isAddingNew) deviceIdInput else deviceIdInput.ifEmpty { "Select Device ID" },
+                            onValueChange = { if (isAddingNew) deviceIdInput = it },
+                            label = { Text("Device ID") },
+                            singleLine = true,
+                            enabled = !isLoading && isAddingNew,
+                            readOnly = !isAddingNew,
+                            modifier = Modifier.fillMaxWidth(),
+                            trailingIcon = {
+                                Icon(
+                                    imageVector = if (dropdownExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.ArrowDropDown,
+                                    contentDescription = "Dropdown",
+                                    modifier = Modifier.clickable { if (!isLoading) dropdownExpanded = !dropdownExpanded }
+                                )
+                            },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                            )
                         )
-                    )
+
+                        // Overlay clickable area when not adding new to trigger dropdown
+                        if (!isAddingNew) {
+                            Box(
+                                modifier = Modifier
+                                    .matchParentSize()
+                                    .clickable { if (!isLoading) dropdownExpanded = !dropdownExpanded }
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = dropdownExpanded,
+                            onDismissRequest = { dropdownExpanded = false },
+                            modifier = Modifier
+                                .fillMaxWidth(0.8f)
+                                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Add New") },
+                                onClick = {
+                                    isAddingNew = true
+                                    deviceIdInput = ""
+                                    dropdownExpanded = false
+                                }
+                            )
+                            knownIds.forEach { id ->
+                                DropdownMenuItem(
+                                    text = { Text(id) },
+                                    onClick = {
+                                        isAddingNew = false
+                                        deviceIdInput = id
+                                        dropdownExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
 
                     OutlinedTextField(
                         value = usernameInput,
-                        onValueChange = { usernameInput = it },
+                        onValueChange = { 
+                            usernameInput = it
+                            refreshKnownIds()
+                        },
                         label = { Text("Basic Auth Username") },
                         singleLine = true,
                         enabled = !isLoading,
@@ -800,7 +874,10 @@ fun cloudSyncPopup(
 
                     OutlinedTextField(
                         value = passwordInput,
-                        onValueChange = { passwordInput = it },
+                        onValueChange = { 
+                            passwordInput = it
+                            refreshKnownIds()
+                        },
                         label = { Text("Basic Auth Password") },
                         singleLine = true,
                         enabled = !isLoading,
