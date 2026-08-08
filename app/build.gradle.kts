@@ -133,11 +133,24 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.animation:animation:1.8.3")
     implementation("androidx.compose.material3:material3:1.3.2")
+    implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.navigation:navigation-compose:2.9.3")
     implementation("androidx.datastore:datastore-preferences:1.1.7")
     implementation("com.github.mik3y:usb-serial-for-android:3.9.0")
     implementation("androidx.compose.foundation:foundation-layout:1.9.4")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    // ML Kit Barcode Scanning
+    implementation("com.google.mlkit:barcode-scanning:17.3.0")
+
+    // CameraX
+    val cameraxVersion = "1.4.1"
+    implementation("androidx.camera:camera-camera2:$cameraxVersion")
+    implementation("androidx.camera:camera-lifecycle:$cameraxVersion")
+    implementation("androidx.camera:camera-view:$cameraxVersion")
+
+    // SVG rendering
+    implementation("com.caverock:androidsvg-aar:1.4")
 }
 
 tasks.register("uploadApkToServer") {

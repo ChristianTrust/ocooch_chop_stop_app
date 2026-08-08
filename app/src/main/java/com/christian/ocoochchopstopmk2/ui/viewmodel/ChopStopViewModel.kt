@@ -3,6 +3,7 @@ package com.christian.ocoochchopstopmk2.ui.viewmodel
 import android.app.Application
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
+import android.util.Log
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -13,6 +14,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.application
 import androidx.lifecycle.viewModelScope
 import com.christian.ocoochchopstopmk2.data.ChopStopRepository
+import com.christian.ocoochchopstopmk2.data.TicketItem
 import com.hoho.android.usbserial.driver.CdcAcmSerialDriver
 import com.hoho.android.usbserial.driver.UsbSerialDriver
 import com.hoho.android.usbserial.driver.UsbSerialPort
@@ -119,6 +121,12 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     var errorTitle: String by mutableStateOf("")
     var errorMessage: String by mutableStateOf("")
 //    var connectionState by mutableIntStateOf(0)
+
+    var ticketItems: List<TicketItem> by mutableStateOf(emptyList())
+    var selectedTicketItem: TicketItem? by mutableStateOf(null)
+    var ticketPanelExpanded: Boolean by mutableStateOf(false)
+    var showScanner: Boolean by mutableStateOf(false)
+    var isTicketLoading: Boolean by mutableStateOf(false)
 
     var activeBlockState by mutableStateOf(BlockState.NONE)
 
@@ -358,6 +366,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun goToPosition(unitType: String = this.unit, distance: Float = this.inputNumber.toFloat()) {
+        selectedTicketItem = null
         fun calculateSteps(blockValue: Int): Int {
             val physicalDistance = if (unitType == "MM:") {
                 distance + (blockValue * 25.4f)
@@ -1141,6 +1150,85 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                     withContext(Dispatchers.Main) {
                         logToTerminal("Restore error: $errMsg", "[ERR]")
                         onFailure(errMsg)
+                    }
+                }
+            }
+        }
+    }
+
+    fun fetchTicket(ticketNumber: String) {
+        if (isTicketLoading) return
+        isTicketLoading = true
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                try {
+                    val client = OkHttpClient()
+                    val credential = Credentials.basic(basicAuthUsername, basicAuthPassword)
+                    val fields = listOf(
+                        "length", "description", "is_custom", "total_need", "unit",
+                        "is_split", "split_item_need", "order_number", "total_ordered", "inventory"
+                    ).joinToString(",")
+
+                    val url = "https://admin.ocoochhardwoods.com"
+                        .toHttpUrl()
+                        .newBuilder()
+                        .addPathSegments("api/chopstop/ticket")
+                        .addPathSegment(ticketNumber)
+                        .addQueryParameter("fields", fields)
+                        .build()
+
+                    val request = Request.Builder()
+                        .url(url)
+                        .get()
+                        .header("Authorization", credential)
+                        .build()
+
+                    client.newCall(request).execute().use { response ->
+                        if (response.isSuccessful) {
+                            val body = response.body?.string() ?: "[]"
+                            val jsonArray = JSONArray(body)
+                            val items = mutableListOf<TicketItem>()
+                            for (i in 0 until jsonArray.length()) {
+                                val obj = jsonArray.getJSONObject(i)
+                                Log.d("ChopStopViewModel", "Raw JSON item $i: $obj")
+                                val ticketItem = TicketItem(
+                                    length = obj.optString("length", "0"),
+                                    description = obj.optString("description", ""),
+                                    isCustom = obj.optBoolean("is_custom", false),
+                                    totalNeed = obj.optDouble("total_need", 0.0).toFloat(),
+                                    unit = obj.optString("unit", ""),
+                                    isSplit = obj.optBoolean("is_split", false),
+                                    splitItemNeed = obj.optDouble("split_item_need", 0.0).toFloat(),
+                                    orderNumber = obj.optString("order_number", ""),
+                                    totalOrdered = obj.optDouble("total_ordered", 0.0).toFloat(),
+                                    inventory = obj.optDouble("inventory", 0.0).toFloat()
+                                )
+                                Log.d("ChopStopViewModel", "Fetched item $i: $ticketItem")
+                                items.add(ticketItem)
+                            }
+                            withContext(Dispatchers.Main) {
+                                ticketItems = items
+                                ticketPanelExpanded = true
+                                isTicketLoading = false
+                                showScanner = false
+                            }
+                        } else {
+                            val errMsg = "HTTP ${response.code}: ${response.message}"
+                            withContext(Dispatchers.Main) {
+                                showError = true
+                                errorTitle = "Fetch Ticket Failed"
+                                errorMessage = errMsg
+                                isTicketLoading = false
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    val errMsg = e.localizedMessage ?: "Unknown error"
+                    withContext(Dispatchers.Main) {
+                        showError = true
+                        errorTitle = "Fetch Ticket Error"
+                        errorMessage = errMsg
+                        isTicketLoading = false
                     }
                 }
             }
