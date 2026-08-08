@@ -392,15 +392,21 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
             return sfz
         }
 
-        var targetStepsFromZero = calculateSteps(activeBlockState.value)
+        val stepsWithNone = calculateSteps(BlockState.NONE.value)
+        var targetStepsFromZero: Int
 
         // Auto block logic
-        if (targetStepsFromZero - getStopHeadSteps() < minStepPosition && activeBlockState != BlockState.TWENTY) {
+        if (stepsWithNone - getStopHeadSteps() >= minStepPosition) {
+            activeBlockState = BlockState.NONE
+            targetStepsFromZero = stepsWithNone
+        } else {
             val stepsWithTwenty = calculateSteps(BlockState.TWENTY.value)
-            if (stepsWithTwenty - getStopHeadSteps() in minStepPosition..maxStepPosition
-            ) {
+            if (stepsWithTwenty - getStopHeadSteps() in minStepPosition..maxStepPosition) {
                 activeBlockState = BlockState.TWENTY
                 targetStepsFromZero = stepsWithTwenty
+            } else {
+                activeBlockState = BlockState.NONE
+                targetStepsFromZero = stepsWithNone
             }
         }
 
