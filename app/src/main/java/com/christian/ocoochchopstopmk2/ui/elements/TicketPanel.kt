@@ -99,12 +99,12 @@ fun TicketPanel(
                         items(chop.ticketItems) { item ->
                             TicketItemRow(
                                 item = item,
-                                isSelected = chop.selectedTicketItem == item,
-                                hasSelection = chop.selectedTicketItem != null,
+                                isSelected = chop.selectedTicketItemId == item.id,
+                                hasSelection = chop.selectedTicketItemId.isNotEmpty(),
                                 onClick = {
-                                    chop.selectedTicketItem = item
+                                    chop.selectedTicketItemId = item.id
                                     val lengthVal = item.length.toFloatOrNull() ?: 0f
-                                    chop.goToPosition("INCH:", lengthVal)
+                                    chop.goToPosition("INCH:", lengthVal, fromTicket = true)
                                 }
                             )
                         }

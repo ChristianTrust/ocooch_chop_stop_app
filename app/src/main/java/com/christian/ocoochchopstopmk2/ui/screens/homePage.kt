@@ -6,11 +6,15 @@ import android.content.pm.PackageManager
 import android.content.res.Configuration
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,6 +52,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -62,6 +67,7 @@ import com.christian.ocoochchopstopmk2.R.drawable.power_16
 import com.christian.ocoochchopstopmk2.ui.elements.ScannerView
 import com.christian.ocoochchopstopmk2.ui.elements.TicketPanel
 import com.christian.ocoochchopstopmk2.ui.elements.distanceDisplay
+import com.christian.ocoochchopstopmk2.ui.elements.TicketPresets
 import com.christian.ocoochchopstopmk2.ui.elements.numpad
 import com.christian.ocoochchopstopmk2.ui.elements.ocoochPopupAlert
 import com.christian.ocoochchopstopmk2.ui.input.addToMainInputNumber
@@ -316,17 +322,50 @@ fun homePage(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(padding),
+                        .padding(padding)
+                        .weight(1f)
+                        .graphicsLayer(clip = false),
                     contentAlignment = Alignment.Center
                 ) {
-                    numpad(
-                        onClick = {
-                            chop.inputNumber = addToMainInputNumber(it, chop.inputNumber, chop)
+                    AnimatedContent(
+                        targetState = chop.ticketPanelExpanded,
+                        transitionSpec = {
+                            if (targetState) {
+                                // Transition to TicketPresets
+                                if (isPortrait) {
+                                    (slideInVertically { it } + fadeIn()).togetherWith(slideOutVertically { -it } + fadeOut())
+                                } else {
+                                    (slideInHorizontally { it } + fadeIn()).togetherWith(slideOutHorizontally { -it } + fadeOut())
+                                }
+                            } else {
+                                // Transition to Numpad
+                                if (isPortrait) {
+                                    (slideInVertically { -it } + fadeIn()).togetherWith(slideOutVertically { it } + fadeOut())
+                                } else {
+                                    (slideInHorizontally { -it } + fadeIn()).togetherWith(slideOutHorizontally { it } + fadeOut())
+                                }
+                            }
                         },
-                        modifier = Modifier,
-                        isDecimalEnabled = true,
-                        useConfirmButton = false
-                    )
+                        label = "numpadTransition",
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.zIndex(0f)
+                    ) { isExpanded ->
+                        if (isExpanded) {
+                            TicketPresets(
+                                chop = chop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            numpad(
+                                onClick = {
+                                    chop.inputNumber = addToMainInputNumber(it, chop.inputNumber, chop)
+                                },
+                                modifier = Modifier.fillMaxSize(),
+                                isDecimalEnabled = true,
+                                useConfirmButton = false
+                            )
+                        }
+                    }
                 }
             }
 
@@ -334,6 +373,7 @@ fun homePage(
                 modifier = Modifier
                     .width(buttonBoxWidth)
                     .height(buttonBoxHeight)
+                    .zIndex(1f)
             ) {
                 Column(
                     modifier = Modifier

@@ -109,6 +109,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     var unitMarker: String by mutableStateOf("")
 
     var isMotorPowered: Boolean by mutableStateOf(false)
+    var isMockMode: Boolean by mutableStateOf(false)
     var isMoving: Boolean by mutableStateOf(false)
     var isStopping: Boolean by mutableStateOf(false)
     var isHoming: Boolean by mutableStateOf(false)
@@ -123,7 +124,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
 //    var connectionState by mutableIntStateOf(0)
 
     var ticketItems: List<TicketItem> by mutableStateOf(emptyList())
-    var selectedTicketItem: TicketItem? by mutableStateOf(null)
+    var selectedTicketItemId by mutableStateOf("")
     var ticketPanelExpanded: Boolean by mutableStateOf(false)
     var showScanner: Boolean by mutableStateOf(false)
     var isTicketLoading: Boolean by mutableStateOf(false)
@@ -365,8 +366,11 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         sendData("MOVE:$steps")
     }
 
-    fun goToPosition(unitType: String = this.unit, distance: Float = this.inputNumber.toFloat()) {
-        selectedTicketItem = null
+    fun goToPosition(
+        unitType: String = this.unit,
+        distance: Float = this.inputNumber.toFloat(),
+        fromTicket: Boolean = false
+    ) {
         fun calculateSteps(blockValue: Int): Int {
             val physicalDistance = if (unitType == "MM:") {
                 distance + (blockValue * 25.4f)
@@ -422,6 +426,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
             }
         } else {
             val stepsToGo = targetStepsFromZero - stepPosition
+            if (!fromTicket) selectedTicketItemId = ""
             moveSteps(stepsToGo - getStopHeadSteps())
             clearInput()
         }
@@ -530,6 +535,45 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
         endCalibration()
     }
 
+    private fun simulateMcuResponse(command: String) {
+        viewModelScope.launch {
+            delay(100) // Simulate transmission delay
+            when {
+                command.startsWith("MOVE:") -> {
+                    handleIncomingLine("STARTED")
+                    delay(800) // Simulate time taken to move
+                    val steps = command.substringAfter(":").toIntOrNull() ?: 0
+                    stepPosition += steps
+                    handleIncomingLine("POS:$stepPosition")
+                    handleIncomingLine("STOPPED")
+                }
+
+                command == "HOME" -> {
+                    handleIncomingLine("STARTED")
+                    delay(1200)
+                    stepPosition = 0
+                    handleIncomingLine("POS:0")
+                    handleIncomingLine("HOME")
+                    handleIncomingLine("STOPPED")
+                }
+
+                command == "LOG" -> handleIncomingLine("POWER:ON")
+                command == "X" -> handleIncomingLine("STOPPED")
+                command == "CHECK" -> handleIncomingLine("STOPPED")
+                command == "CONFIRM" -> handleIncomingLine("MEGA_READY")
+                command.startsWith("SPEED:") -> {}
+                command.startsWith("ACCEL:") -> {}
+                command.startsWith("MAX_DELAY:") -> {}
+                command.startsWith("MIN_DELAY:") -> {}
+                command.startsWith("POS:") -> {
+                    stepPosition = command.substringAfter(":").toIntOrNull() ?: stepPosition
+                    handleIncomingLine("POS:$stepPosition")
+                }
+                command.startsWith("INVERT_DIR:") -> {}
+            }
+        }
+    }
+
     // USB ////////////////////////////////////////////////////////////////////////////////////////////////////// USB //
 
     private fun setupUsbPermissionReceiver() {
@@ -571,6 +615,15 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
 
     internal fun connectToDevice() {
         viewModelScope.launch {
+            if (isMockMode) {
+                logToTerminal("Mock Mode: Simulating Connection...")
+                delay(500)
+                _connectionState.value = ConnectionState.CONNECTED
+                handleIncomingLine("MEGA_READY")
+                handleIncomingLine("POWER:ON")
+                logToTerminal("Mock Mode: Connected", "[INFO]")
+                return@launch
+            }
             val customProber = UsbSerialProber.getDefaultProber()
             var availableDrivers = customProber.findAllDrivers(usbManager)
             // If no drivers found with default prober, try CDC prober
@@ -745,6 +798,14 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun sendData(text: String, force: Boolean = false) {
+        if (isMockMode) {
+            viewModelScope.launch {
+                logToTerminal(text, "[Mock Sent]")
+                lastSentLine.value = text
+                simulateMcuResponse(text)
+            }
+            return
+        }
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 if (isHoming && !force) {
@@ -764,8 +825,6 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
             }
         }
     }
-
-    // USB ////////////////////////////////////////////////////////////////////////////////////////////////////// USB //
 
     fun moveStart() {
         isMoving = true
@@ -1171,7 +1230,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                     val client = OkHttpClient()
                     val credential = Credentials.basic(basicAuthUsername, basicAuthPassword)
                     val fields = listOf(
-                        "length", "description", "is_custom", "total_need", "unit",
+                        "stacked_id", "length", "description", "is_custom", "total_need", "unit",
                         "is_split", "split_item_need", "order_number", "total_ordered", "inventory"
                     ).joinToString(",")
 
@@ -1198,6 +1257,7 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                                 val obj = jsonArray.getJSONObject(i)
                                 Log.d("ChopStopViewModel", "Raw JSON item $i: $obj")
                                 val ticketItem = TicketItem(
+                                    id = obj.optString("stacked_id", ""),
                                     length = obj.optString("length", "0"),
                                     description = obj.optString("description", ""),
                                     isCustom = obj.optBoolean("is_custom", false),

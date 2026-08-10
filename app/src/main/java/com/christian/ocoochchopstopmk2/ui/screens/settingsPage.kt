@@ -432,6 +432,18 @@ fun settingsPage(
                                     Spacer(modifier = Modifier)
                                 }
                             } else {
+                                columnOrRow(useColumn = isPortrait, modifier = Modifier.weight(1f), content = {
+                                    ocoochCard(
+                                        text = if (chop.isMockMode) "Mock: ON" else "Mock: OFF",
+                                        onClick = {
+                                            chop.isMockMode = !chop.isMockMode
+                                            if (chop.isMockMode) chop.connectToDevice()
+                                        },
+                                        modifier = Modifier.weight(1f).fillMaxSize(),
+                                        colors = if (chop.isMockMode) listOf(Color(0xFFE91E63), Color.White) else listOf(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimary),
+                                        fontSize = 16
+                                    )
+                                })
 
                                 columnOrRow(useColumn = isPortrait, modifier = Modifier.weight(1f), content = {
 

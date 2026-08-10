@@ -1,6 +1,7 @@
 package com.christian.ocoochchopstopmk2.data
 
 data class TicketItem(
+    val id: String = "",
     val length: String,
     val description: String = "",
     val isCustom: Boolean = false,
