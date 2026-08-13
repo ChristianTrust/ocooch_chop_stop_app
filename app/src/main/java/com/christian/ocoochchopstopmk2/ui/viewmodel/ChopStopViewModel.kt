@@ -378,29 +378,30 @@ class ChopStopViewModel(application: Application) : AndroidViewModel(application
                 distance + blockValue
             }
 
-            var sfz = if (unitType == "MM:") {
+            var stepsFromZero = if (unitType == "MM:") {
                 (physicalDistance * (stepsPerInch / 25.4)).toInt()
             } else {
                 (physicalDistance * stepsPerInch).toInt()
             }
 
+            // increment to avoid .999
             if (unitType == "MM:") {
-                if ((sfz / (stepsPerInch / 25.4)).let { round(it * 1000) / 1000 } < physicalDistance) {
-                    sfz++
+                if ((stepsFromZero / (stepsPerInch / 25.4)).let { round(it * 1000) / 1000 } < physicalDistance) {
+                    stepsFromZero++
                 }
             } else {
-                if ((sfz / stepsPerInch).let { round(it * 1000) / 1000 } < physicalDistance) {
-                    sfz++
+                if ((stepsFromZero / stepsPerInch).let { round(it * 1000) / 1000 } < physicalDistance) {
+                    stepsFromZero++
                 }
             }
-            return sfz
+            return stepsFromZero
         }
 
         val stepsWithNone = calculateSteps(BlockState.NONE.value)
         var targetStepsFromZero: Int
 
         // Auto block logic
-        if (stepsWithNone - getStopHeadSteps() >= minStepPosition) {
+        if (!useBlock || stepsWithNone - getStopHeadSteps() >= minStepPosition) {
             activeBlockState = BlockState.NONE
             targetStepsFromZero = stepsWithNone
         } else {
